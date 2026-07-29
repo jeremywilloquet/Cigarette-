@@ -18,10 +18,17 @@ restent dans le navigateur du téléphone.
 L'icône apparaît avec les autres apps. Ouverte depuis là, elle s'affiche en plein
 écran, sans barre d'adresse, et marche même sans réseau.
 
-> Pour que l'adresse fonctionne, GitHub Pages doit être activé sur le dépôt :
-> **Settings → Pages → Source: Deploy from a branch**, puis choisir la branche
-> (`main` ou `claude/ios-cigarette-counter-app-gagjsh`) et le dossier `/ (root)`.
-> Le premier déploiement prend une minute ou deux.
+> Pour que l'adresse fonctionne, GitHub Pages doit être activé sur le dépôt.
+> Le chemin, avec les libellés de l'interface GitHub (en anglais) :
+>
+> 1. Onglet **Settings** du dépôt
+> 2. Menu de gauche, sous **Code and automation** → **Pages**
+> 3. **Build and deployment** → **Source** : **Deploy from a branch**
+> 4. **Branch** : choisir la branche (`main` ou
+>    `claude/ios-cigarette-counter-app-gagjsh`), garder **`/ (root)`** → **Save**
+>
+> Le premier déploiement prend une minute ou deux, puis un bandeau affiche
+> *« Your site is live at … »*.
 
 ## Utilisation
 
