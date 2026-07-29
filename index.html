@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Clopes — compteur du jour</title>
+
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="description" content="Compteur de cigarettes avec objectif quotidien.">
+<meta name="theme-color" content="#0b0e13" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
+
+<!-- Ajout à l'écran d'accueil iOS -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Clopes">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png" sizes="192x192">
+
+<style>
+  :root {
+    --bg: #0b0e13;
+    --bg-2: #12161f;
+    --surface: rgba(255, 255, 255, .055);
+    --surface-2: rgba(255, 255, 255, .09);
+    --line: rgba(255, 255, 255, .10);
+    --text: #f1f3f7;
+    --muted: #8d95a6;
+    --track: rgba(255, 255, 255, .08);
+    --ok: #38d9a0;
+    --low: #ffb454;
+    --over: #ff5f6d;
+    --accent: var(--ok);
+    --shadow: 0 18px 44px rgba(0, 0, 0, .45);
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f4f5f7;
+      --bg-2: #ffffff;
+      --surface: rgba(10, 14, 22, .045);
+      --surface-2: rgba(10, 14, 22, .075);
+      --line: rgba(10, 14, 22, .10);
+      --text: #0e1218;
+      --muted: #6b7283;
+      --track: rgba(10, 14, 22, .08);
+      --ok: #0fa97a;
+      --low: #d98315;
+      --over: #e03b4c;
+      --shadow: 0 14px 34px rgba(10, 14, 22, .12);
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+  }
+
+  body {
+    background: radial-gradient(120% 80% at 50% 0%, var(--bg-2) 0%, var(--bg) 62%) fixed;
+    color: var(--text);
+    font: 400 17px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+    text-rendering: optimizeLegibility;
+  }
+
+  button {
+    font: inherit;
+    color: inherit;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+  }
+
+  .app {
+    min-height: 100vh;
+    min-height: 100dvh;
+    max-width: 460px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding:
+      calc(env(safe-area-inset-top) + 14px)
+      calc(env(safe-area-inset-right) + 20px)
+      calc(env(safe-area-inset-bottom) + 20px)
+      calc(env(safe-area-inset-left) + 20px);
+  }
+
+  /* ---------- Header ---------- */
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .today {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .icon-btn {
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--muted);
+    transition: background .15s, color .15s, transform .15s;
+  }
+
+  .icon-btn:active { transform: scale(.92); }
+  .icon-btn:hover { color: var(--text); }
+
+  /* ---------- Anneau ---------- */
+
+  .dial {
+    position: relative;
+    width: min(58vw, 224px);
+    aspect-ratio: 1;
+    margin: 2px auto 0;
+    display: grid;
+    place-items: center;
+  }
+
+  .dial svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+    overflow: visible;
+  }
+
+  .dial .track {
+    fill: none;
+    stroke: var(--track);
+    stroke-width: 11;
+  }
+
+  .dial .bar {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 11;
+    stroke-linecap: round;
+    filter: drop-shadow(0 0 9px color-mix(in srgb, var(--accent) 42%, transparent));
+    transition: stroke-dashoffset .55s cubic-bezier(.22, 1, .36, 1), stroke .3s;
+  }
+
+  .readout {
+    position: relative;
+    text-align: center;
+    line-height: 1;
+  }
+
+  .count {
+    font-size: 66px;
+    font-weight: 700;
+    letter-spacing: -.04em;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+    transition: color .3s;
+  }
+
+  .count.bump { animation: bump .38s cubic-bezier(.3, 1.4, .5, 1); }
+
+  @keyframes bump {
+    0%   { transform: scale(1); }
+    35%  { transform: scale(1.13); }
+    100% { transform: scale(1); }
+  }
+
+  .caption {
+    margin-top: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--muted);
+  }
+
+  /* ---------- Actions ---------- */
+
+  .smoke {
+    width: 100%;
+    padding: 17px 20px;
+    border-radius: 20px;
+    background: var(--accent);
+    color: #06090e;
+    font-size: 18px;
+    font-weight: 650;
+    letter-spacing: -.01em;
+    box-shadow: var(--shadow);
+    transition: transform .12s cubic-bezier(.3, 1.3, .6, 1), background .3s, opacity .2s;
+  }
+
+  .smoke:active { transform: scale(.975); }
+
+  .undo {
+    display: block;
+    margin: -6px auto 0;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 15px;
+    color: var(--muted);
+    transition: opacity .2s, color .15s;
+  }
+
+  .undo:disabled {
+    opacity: .32;
+    cursor: default;
+  }
+
+  .undo:not(:disabled):active { background: var(--surface); }
+
+  /* ---------- Stats ---------- */
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .stat {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 13px 8px 11px;
+    text-align: center;
+  }
+
+  .stat b {
+    display: block;
+    font-size: 19px;
+    font-weight: 650;
+    letter-spacing: -.02em;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap; /* garde les trois tuiles à la même hauteur */
+  }
+
+  .stat span {
+    display: block;
+    margin-top: 3px;
+    font-size: 11px;
+    font-weight: 550;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ---------- Historique ---------- */
+
+  .history { margin-top: auto; }
+
+  .history h2 {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 0 0 12px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .history h2 em {
+    font-style: normal;
+    letter-spacing: 0;
+    text-transform: none;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .chart {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 68px;
+    padding-bottom: 2px;
+  }
+
+  .goal-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-top: 1px dashed var(--line);
+    pointer-events: none;
+  }
+
+  .chart .col {
+    position: relative;
+    flex: 1;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+  }
+
+  .chart .col i {
+    display: block;
+    width: 100%;
+    min-height: 3px;
+    border-radius: 4px;
+    background: var(--surface-2);
+    transition: height .4s cubic-bezier(.22, 1, .36, 1);
+  }
+
+  .chart .col.over i { background: color-mix(in srgb, var(--over) 62%, transparent); }
+  .chart .col.today i { background: var(--accent); }
+
+  /* ---------- Réglages ---------- */
+
+  .scrim {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .55);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .25s, visibility .25s;
+    z-index: 10;
+  }
+
+  .sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 11;
+    background: var(--bg-2);
+    border-radius: 26px 26px 0 0;
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -20px 50px rgba(0, 0, 0, .4);
+    padding: 10px 20px calc(env(safe-area-inset-bottom) + 22px);
+    transform: translateY(101%);
+    transition: transform .34s cubic-bezier(.22, 1, .36, 1);
+  }
+
+  .sheet .grip {
+    width: 38px;
+    height: 4px;
+    border-radius: 99px;
+    background: var(--line);
+    margin: 4px auto 16px;
+  }
+
+  body.sheet-open .scrim { opacity: 1; visibility: visible; }
+  body.sheet-open .sheet { transform: translateY(0); }
+
+  .sheet h2 {
+    margin: 0 0 4px;
+    font-size: 20px;
+    font-weight: 650;
+    letter-spacing: -.02em;
+  }
+
+  .sheet p.hint {
+    margin: 0 0 20px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  .stepper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    background: var(--surface);
+    border-radius: 18px;
+    padding: 10px 12px;
+  }
+
+  .stepper button {
+    width: 48px;
+    height: 48px;
+    flex: none;
+    border-radius: 14px;
+    background: var(--surface-2);
+    font-size: 26px;
+    font-weight: 500;
+    line-height: 1;
+    display: grid;
+    place-items: center;
+    transition: transform .12s, opacity .2s;
+  }
+
+  .stepper button:active { transform: scale(.9); }
+  .stepper button:disabled { opacity: .3; cursor: default; }
+
+  .stepper .value {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -.03em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stepper .value small {
+    display: block;
+    font-size: 11px;
+    font-weight: 550;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .presets {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .presets button {
+    flex: 1;
+    padding: 10px 0;
+    border-radius: 12px;
+    background: var(--surface);
+    font-size: 15px;
+    font-weight: 550;
+    font-variant-numeric: tabular-nums;
+    transition: background .15s, color .15s;
+  }
+
+  /* Neutre volontairement : la couleur d'ambiance signale un dépassement,
+     elle ne doit pas se retrouver sur un simple bouton sélectionné. */
+  .presets button[aria-pressed="true"] {
+    background: var(--text);
+    color: var(--bg);
+  }
+
+  .danger-zone {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    margin-top: 22px;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .danger-zone button {
+    padding: 15px 16px;
+    text-align: left;
+    background: var(--surface);
+    font-size: 16px;
+    transition: background .15s;
+  }
+
+  .danger-zone button:active { background: var(--surface-2); }
+  .danger-zone .destructive { color: var(--over); }
+
+  .sheet footer {
+    margin-top: 18px;
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+
+<body>
+<div class="app">
+  <header>
+    <div class="today" id="date">—</div>
+    <button class="icon-btn" id="open-settings" aria-label="Réglages">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+  </header>
+
+  <div class="dial">
+    <svg viewBox="0 0 120 120" aria-hidden="true">
+      <circle class="track" cx="60" cy="60" r="52"/>
+      <circle class="bar" id="bar" cx="60" cy="60" r="52"/>
+    </svg>
+    <div class="readout">
+      <div class="count" id="count" aria-live="polite">—</div>
+      <div class="caption" id="caption">chargement</div>
+    </div>
+  </div>
+
+  <button class="smoke" id="smoke">J'en fume une</button>
+  <button class="undo" id="undo" disabled>Annuler la dernière</button>
+
+  <div class="stats">
+    <div class="stat"><b id="s-smoked">0</b><span>fumées</span></div>
+    <div class="stat"><b id="s-goal">0</b><span>objectif</span></div>
+    <div class="stat"><b id="s-last">—</b><span>dernière</span></div>
+  </div>
+
+  <section class="history">
+    <h2>14 derniers jours <em id="s-avg">—</em></h2>
+    <div class="chart" id="chart"><div class="goal-line" id="goal-line"></div></div>
+  </section>
+</div>
+
+<div class="scrim" id="scrim"></div>
+
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+  <div class="grip"></div>
+  <h2 id="sheet-title">Objectif quotidien</h2>
+  <p class="hint">Le compteur repart à zéro chaque jour à minuit.</p>
+
+  <div class="stepper">
+    <button id="minus" aria-label="Diminuer l'objectif">−</button>
+    <div class="value"><span id="goal-value">10</span><small>par jour</small></div>
+    <button id="plus" aria-label="Augmenter l'objectif">+</button>
+  </div>
+
+  <div class="presets" id="presets">
+    <button data-goal="5">5</button>
+    <button data-goal="10">10</button>
+    <button data-goal="15">15</button>
+    <button data-goal="20">20</button>
+  </div>
+
+  <div class="danger-zone">
+    <button id="reset-day">Remettre aujourd'hui à zéro</button>
+    <button id="reset-all" class="destructive">Effacer tout l'historique</button>
+  </div>
+
+  <footer>Tes données restent sur ce téléphone.<br>Rien n'est envoyé nulle part.</footer>
+</div>
+
+<noscript><p style="padding:20px;text-align:center">Cette app a besoin de JavaScript.</p></noscript>
+
+<script>
+(() => {
+  'use strict';
+
+  const STORE = 'cigarette.v1';
+  const DEFAULT_GOAL = 10;
+  const MAX_GOAL = 60;
+  const WINDOW_DAYS = 14;
+  const CIRCUMFERENCE = 2 * Math.PI * 52;
+
+  const $ = (id) => document.getElementById(id);
+
+  const el = {
+    date: $('date'), bar: $('bar'), count: $('count'), caption: $('caption'),
+    smoke: $('smoke'), undo: $('undo'),
+    smoked: $('s-smoked'), goal: $('s-goal'), last: $('s-last'), avg: $('s-avg'),
+    chart: $('chart'), goalLine: $('goal-line'),
+    sheet: $('sheet'), scrim: $('scrim'),
+    goalValue: $('goal-value'), minus: $('minus'), plus: $('plus'), presets: $('presets'),
+  };
+
+  /* ---------- Outils ---------- */
+
+  const clampGoal = (n) => Math.max(0, Math.min(MAX_GOAL, Math.round(Number(n) || 0)));
+
+  function dayKey(date = new Date()) {
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  }
+
+  /* ---------- État ---------- */
+
+  // { goal: number, log: { "YYYY-MM-DD": [timestamp, …] } }
+
+  // Le try n'entoure que l'accès au stockage (indisponible en navigation privée,
+  // contenu potentiellement corrompu) : le reste doit échouer bruyamment.
+  function readStored() {
+    try {
+      return JSON.parse(localStorage.getItem(STORE));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function load() {
+    const raw = readStored();
+    if (!raw || typeof raw !== 'object') return { goal: DEFAULT_GOAL, log: {} };
+    return {
+      goal: clampGoal(raw.goal ?? DEFAULT_GOAL),
+      log: raw.log && typeof raw.log === 'object' ? raw.log : {},
+    };
+  }
+
+  function save() {
+    try {
+      localStorage.setItem(STORE, JSON.stringify(state));
+    } catch (_) { /* quota ou stockage bloqué : l'app reste utilisable pour la session */ }
+  }
+
+  let state = load();
+  let currentDay = dayKey();
+
+  const entries = (key = currentDay) => state.log[key] || [];
+
+  /* ---------- Actions ---------- */
+
+  function smoke() {
+    rolloverIfNeeded();
+    state.log[currentDay] = [...entries(), Date.now()];
+    save();
+    render({ bump: true });
+  }
+
+  function undo() {
+    const today = entries();
+    if (!today.length) return;
+    state.log[currentDay] = today.slice(0, -1);
+    if (!state.log[currentDay].length) delete state.log[currentDay];
+    save();
+    render();
+  }
+
+  function setGoal(value) {
+    state.goal = clampGoal(value);
+    save();
+    render();
+  }
+
+  function rolloverIfNeeded() {
+    const key = dayKey();
+    if (key !== currentDay) {
+      currentDay = key;
+      return true;
+    }
+    return false;
+  }
+
+  /* ---------- Formatage ---------- */
+
+  const dateFmt = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  const plural = (n, word) => `${word}${Math.abs(n) >= 2 ? 's' : ''}`;
+
+  // Format court : la tuile « dernière » doit tenir sur une seule ligne.
+  function sinceLabel(timestamp) {
+    const minutes = Math.floor((Date.now() - timestamp) / 60000);
+    if (minutes < 1) return '< 1 min';
+    if (minutes < 60) return `${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    const rest = minutes % 60;
+    if (hours >= 10) return `${hours} h`;
+    return rest ? `${hours} h ${String(rest).padStart(2, '0')}` : `${hours} h`;
+  }
+
+  /* ---------- Rendu ---------- */
+
+  function render({ bump = false } = {}) {
+    const goal = state.goal;
+    const smoked = entries().length;
+    const remaining = goal - smoked;
+
+    el.date.textContent = dateFmt.format(new Date());
+
+    // Couleur d'ambiance selon ce qu'il reste. Une journée encore vierge reste
+    // au vert, même avec un objectif à zéro.
+    const lowThreshold = Math.max(1, Math.ceil(goal * 0.25));
+    const tone = remaining < 0 ? 'over'
+      : smoked > 0 && remaining <= lowThreshold ? 'low'
+      : 'ok';
+    document.documentElement.style.setProperty('--accent', `var(--${tone})`);
+
+    // Anneau : proportion de l'objectif déjà consommée.
+    const ratio = goal > 0 ? Math.min(1, smoked / goal) : (smoked > 0 ? 1 : 0);
+    el.bar.style.strokeDasharray = CIRCUMFERENCE;
+    el.bar.style.strokeDashoffset = CIRCUMFERENCE * (1 - ratio);
+
+    if (remaining > 0) {
+      el.count.textContent = remaining;
+      el.caption.textContent = `${plural(remaining, 'restante')} sur ${goal}`;
+    } else if (remaining === 0) {
+      el.count.textContent = '0';
+      el.caption.textContent = goal === 0 ? 'objectif zéro, tenu' : 'objectif atteint';
+    } else {
+      el.count.textContent = `+${-remaining}`;
+      el.caption.textContent = `au-dessus de l’objectif`;
+    }
+
+    if (bump) {
+      el.count.classList.remove('bump');
+      void el.count.offsetWidth; // relance l'animation
+      el.count.classList.add('bump');
+    }
+
+    el.smoked.textContent = smoked;
+    el.goal.textContent = goal;
+    el.last.textContent = smoked ? sinceLabel(entries()[smoked - 1]) : '—';
+    el.undo.disabled = smoked === 0;
+    el.goalValue.textContent = goal;
+    el.minus.disabled = goal === 0;
+    el.plus.disabled = goal === MAX_GOAL;
+
+    for (const button of el.presets.children) {
+      button.setAttribute('aria-pressed', String(Number(button.dataset.goal) === goal));
+    }
+
+    renderChart(goal);
+  }
+
+  function renderChart(goal) {
+    const days = [];
+    const cursor = new Date();
+    cursor.setHours(12, 0, 0, 0); // midi : à l'abri des changements d'heure
+    for (let i = WINDOW_DAYS - 1; i >= 0; i--) {
+      const date = new Date(cursor);
+      date.setDate(date.getDate() - i);
+      const key = dayKey(date);
+      days.push({ key, count: (state.log[key] || []).length, date });
+    }
+
+    const peak = Math.max(goal, ...days.map((d) => d.count), 1);
+    const scale = peak * 1.12;
+
+    el.chart.querySelectorAll('.col').forEach((node) => node.remove());
+    const labelFmt = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric' });
+
+    for (const day of days) {
+      const col = document.createElement('div');
+      col.className = 'col';
+      if (day.key === currentDay) col.classList.add('today');
+      else if (goal > 0 && day.count > goal) col.classList.add('over');
+      col.title = `${labelFmt.format(day.date)} — ${day.count} ${plural(day.count, 'cigarette')}`;
+
+      const fill = document.createElement('i');
+      fill.style.height = `${(day.count / scale) * 100}%`;
+      col.appendChild(fill);
+      el.chart.appendChild(col);
+    }
+
+    el.goalLine.style.display = goal > 0 ? '' : 'none';
+    el.goalLine.style.bottom = `${(goal / scale) * 100}%`;
+
+    // Moyenne sur les jours réellement suivis, au plus tôt il y a 14 jours.
+    const tracked = days.filter((d) => d.key >= (Object.keys(state.log).sort()[0] || '9999'));
+    if (tracked.length) {
+      const total = tracked.reduce((sum, d) => sum + d.count, 0);
+      el.avg.textContent = `moy. ${(total / tracked.length).toFixed(1).replace('.', ',')}/j`;
+    } else {
+      el.avg.textContent = '—';
+    }
+  }
+
+  /* ---------- Feuille de réglages ---------- */
+
+  const openSheet = () => document.body.classList.add('sheet-open');
+  const closeSheet = () => document.body.classList.remove('sheet-open');
+
+  $('open-settings').addEventListener('click', openSheet);
+  el.scrim.addEventListener('click', closeSheet);
+  document.addEventListener('keydown', (e) => e.key === 'Escape' && closeSheet());
+
+  el.minus.addEventListener('click', () => setGoal(state.goal - 1));
+  el.plus.addEventListener('click', () => setGoal(state.goal + 1));
+  el.presets.addEventListener('click', (e) => {
+    const button = e.target.closest('[data-goal]');
+    if (button) setGoal(button.dataset.goal);
+  });
+
+  $('reset-day').addEventListener('click', () => {
+    if (!entries().length || confirm('Remettre le compteur d’aujourd’hui à zéro ?')) {
+      delete state.log[currentDay];
+      save();
+      render();
+      closeSheet();
+    }
+  });
+
+  $('reset-all').addEventListener('click', () => {
+    if (confirm('Effacer tout l’historique ? Cette action est définitive.')) {
+      state.log = {};
+      save();
+      render();
+      closeSheet();
+    }
+  });
+
+  /* ---------- Boucle principale ---------- */
+
+  el.smoke.addEventListener('click', smoke);
+  el.undo.addEventListener('click', undo);
+
+  // Rafraîchit « dernière » et bascule automatiquement au passage de minuit.
+  setInterval(() => {
+    rolloverIfNeeded();
+    render();
+  }, 20000);
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      rolloverIfNeeded();
+      render();
+    }
+  });
+
+  // Une autre fenêtre (ou onglet) a modifié les données.
+  window.addEventListener('storage', (e) => {
+    if (e.key === STORE) {
+      state = load();
+      render();
+    }
+  });
+
+  render();
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => { /* hors-ligne indisponible, pas bloquant */ });
+    });
+  }
+})();
+</script>
+</body>
+</html>
