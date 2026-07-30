@@ -1,6 +1,6 @@
 /* Service worker : rend l'app utilisable hors connexion une fois installée. */
 
-const CACHE = 'clopes-v1';
+const CACHE = 'clopes-v2';
 
 const ASSETS = [
   './',

@@ -113,6 +113,11 @@
     color: var(--muted);
   }
 
+  .header-actions {
+    display: flex;
+    gap: 6px;
+  }
+
   .icon-btn {
     width: 40px;
     height: 40px;
@@ -262,7 +267,18 @@
 
   /* ---------- Historique ---------- */
 
-  .history { margin-top: auto; }
+  .history {
+    margin-top: auto;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .history:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 6px;
+    border-radius: 8px;
+  }
 
   .history h2 {
     display: flex;
@@ -359,8 +375,189 @@
     margin: 4px auto 16px;
   }
 
+  /* Le glissement de sortie a besoin que le sélecteur corresponde encore
+     pendant la transition : d'où data-sheet conservé et .sheet-open retiré. */
   body.sheet-open .scrim { opacity: 1; visibility: visible; }
-  body.sheet-open .sheet { transform: translateY(0); }
+  body.sheet-open[data-sheet="settings"] #settings-sheet,
+  body.sheet-open[data-sheet="results"] #results-sheet { transform: translateY(0); }
+
+  /* ---------- Feuille haute (résultats) ---------- */
+
+  .sheet--tall {
+    display: flex;
+    flex-direction: column;
+    max-height: 88dvh;
+  }
+
+  .sheet-body {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    margin-top: 16px;
+    padding-bottom: 4px;
+  }
+
+  .segmented {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 4px;
+    margin-bottom: 18px;
+  }
+
+  .segmented button {
+    flex: 1;
+    padding: 9px 0;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 550;
+    color: var(--muted);
+    transition: background .15s, color .15s;
+  }
+
+  .segmented button[aria-pressed="true"] {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+
+  .empty {
+    margin: 8px 0 4px;
+    padding: 26px 18px;
+    border-radius: 16px;
+    background: var(--surface);
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .result-card {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 14px 14px 12px;
+  }
+
+  .result-card b {
+    display: block;
+    font-size: 25px;
+    font-weight: 650;
+    letter-spacing: -.03em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .result-card b.good { color: var(--ok); }
+  .result-card b.bad { color: var(--over); }
+
+  .result-card span {
+    display: block;
+    margin-top: 4px;
+    font-size: 12.5px;
+    line-height: 1.3;
+    color: var(--muted);
+  }
+
+  .result-section h3 {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 24px 0 11px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .result-section h3 em {
+    font-style: normal;
+    letter-spacing: 0;
+    text-transform: none;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .chart--tall { height: 108px; }
+
+  .axis {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 7px;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+  }
+
+  /* Une étiquette par barre, alignée avec elle. */
+  .axis--cols > span {
+    flex: 1;
+    text-align: center;
+  }
+
+  .hours {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 62px;
+  }
+
+  .hours i {
+    flex: 1;
+    min-height: 2px;
+    border-radius: 3px;
+    background: var(--surface-2);
+  }
+
+  .hours i.peak { background: var(--accent); }
+
+  .days { margin-bottom: 4px; }
+
+  .days .row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 2px;
+    border-bottom: 1px solid var(--line);
+    font-size: 15px;
+  }
+
+  .days .row:last-child { border-bottom: 0; }
+
+  .days .row .n {
+    font-size: 17px;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .days .row .tag {
+    min-width: 46px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: var(--surface);
+    font-size: 12px;
+    font-weight: 550;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    color: var(--muted);
+  }
+
+  .days .row .tag.over {
+    background: color-mix(in srgb, var(--over) 17%, transparent);
+    color: var(--over);
+  }
+
+  .days .row .tag.under {
+    background: color-mix(in srgb, var(--ok) 15%, transparent);
+    color: var(--ok);
+  }
 
   .sheet h2 {
     margin: 0 0 4px;
@@ -480,12 +677,21 @@
 <div class="app">
   <header>
     <div class="today" id="date">—</div>
+    <div class="header-actions">
+    <button class="icon-btn" id="open-results" aria-label="Résultats">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="6" y1="20" x2="6" y2="13"/>
+        <line x1="12" y1="20" x2="12" y2="4"/>
+        <line x1="18" y1="20" x2="18" y2="9"/>
+      </svg>
+    </button>
     <button class="icon-btn" id="open-settings" aria-label="Réglages">
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="12" cy="12" r="3"/>
         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
       </svg>
     </button>
+    </div>
   </header>
 
   <div class="dial">
@@ -508,7 +714,7 @@
     <div class="stat"><b id="s-last">—</b><span>dernière</span></div>
   </div>
 
-  <section class="history">
+  <section class="history" id="history" role="button" tabindex="0" aria-label="Voir les résultats détaillés">
     <h2>14 derniers jours <em id="s-avg">—</em></h2>
     <div class="chart" id="chart"><div class="goal-line" id="goal-line"></div></div>
   </section>
@@ -516,7 +722,51 @@
 
 <div class="scrim" id="scrim"></div>
 
-<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+<div class="sheet sheet--tall" id="results-sheet" role="dialog" aria-modal="true" aria-labelledby="results-title">
+  <div class="grip"></div>
+  <h2 id="results-title">Résultats</h2>
+
+  <div class="sheet-body">
+    <div class="segmented" id="periods">
+      <button data-days="7">7 jours</button>
+      <button data-days="30">30 jours</button>
+      <button data-days="90">90 jours</button>
+    </div>
+
+    <p class="empty" id="results-empty" hidden>
+      Rien à afficher pour l'instant. Enregistre une première cigarette et tes
+      résultats apparaîtront ici.
+    </p>
+
+    <div id="results-content">
+      <div class="result-grid">
+        <div class="result-card"><b id="r-total">—</b><span>cigarettes au total</span></div>
+        <div class="result-card"><b id="r-average">—</b><span>par jour en moyenne</span></div>
+        <div class="result-card"><b id="r-within">—</b><span>jours dans l'objectif</span></div>
+        <div class="result-card"><b id="r-trend">—</b><span>vs période précédente</span></div>
+      </div>
+
+      <section class="result-section">
+        <h3>Par jour</h3>
+        <div class="chart chart--tall" id="r-chart"><div class="goal-line" id="r-goal-line"></div></div>
+        <div class="axis" id="r-axis"></div>
+      </section>
+
+      <section class="result-section">
+        <h3>Par heure <em id="r-peak"></em></h3>
+        <div class="hours" id="r-hours"></div>
+        <div class="axis"><span>0 h</span><span>6 h</span><span>12 h</span><span>18 h</span><span>23 h</span></div>
+      </section>
+
+      <section class="result-section">
+        <h3>Jour par jour</h3>
+        <div class="days" id="r-days"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="settings-sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
   <div class="grip"></div>
   <h2 id="sheet-title">Objectif quotidien</h2>
   <p class="hint">Le compteur repart à zéro chaque jour à minuit.</p>
@@ -561,8 +811,10 @@
     smoke: $('smoke'), undo: $('undo'),
     smoked: $('s-smoked'), goal: $('s-goal'), last: $('s-last'), avg: $('s-avg'),
     chart: $('chart'), goalLine: $('goal-line'),
-    sheet: $('sheet'), scrim: $('scrim'),
+    scrim: $('scrim'),
     goalValue: $('goal-value'), minus: $('minus'), plus: $('plus'), presets: $('presets'),
+    periods: $('periods'), rChart: $('r-chart'), rGoalLine: $('r-goal-line'),
+    rAxis: $('r-axis'), rHours: $('r-hours'), rPeak: $('r-peak'), rDays: $('r-days'),
   };
 
   /* ---------- Outils ---------- */
@@ -607,6 +859,29 @@
   let currentDay = dayKey();
 
   const entries = (key = currentDay) => state.log[key] || [];
+
+  /** Les `count` derniers jours consécutifs, du plus ancien au plus récent. */
+  function dayList(count) {
+    const cursor = new Date();
+    cursor.setHours(12, 0, 0, 0); // midi : à l'abri des changements d'heure
+    const days = [];
+    for (let i = count - 1; i >= 0; i--) {
+      const date = new Date(cursor);
+      date.setDate(date.getDate() - i);
+      const key = dayKey(date);
+      days.push({ key, date, count: entries(key).length });
+    }
+    return days;
+  }
+
+  const firstLoggedKey = () => Object.keys(state.log).sort()[0] || null;
+
+  // Les jours antérieurs au tout premier enregistrement ne sont pas des jours à
+  // zéro : ils ne doivent pas tirer les moyennes vers le bas.
+  function trackedDays(days) {
+    const first = firstLoggedKey();
+    return first ? days.filter((day) => day.key >= first) : [];
+  }
 
   /* ---------- Actions ---------- */
 
@@ -710,59 +985,195 @@
     }
 
     renderChart(goal);
+    if (sheetOpen('results')) renderResults(); // garde la feuille à jour si ouverte
   }
 
-  function renderChart(goal) {
-    const days = [];
-    const cursor = new Date();
-    cursor.setHours(12, 0, 0, 0); // midi : à l'abri des changements d'heure
-    for (let i = WINDOW_DAYS - 1; i >= 0; i--) {
-      const date = new Date(cursor);
-      date.setDate(date.getDate() - i);
-      const key = dayKey(date);
-      days.push({ key, count: (state.log[key] || []).length, date });
-    }
+  const barTitleFmt = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric' });
 
-    const peak = Math.max(goal, ...days.map((d) => d.count), 1);
-    const scale = peak * 1.12;
+  /** Dessine un histogramme de jours dans `container`, objectif en pointillés. */
+  function drawBars(container, goalLine, days, goal, gap) {
+    const scale = Math.max(goal, ...days.map((d) => d.count), 1) * 1.12;
 
-    el.chart.querySelectorAll('.col').forEach((node) => node.remove());
-    const labelFmt = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric' });
+    container.querySelectorAll('.col').forEach((node) => node.remove());
+    container.style.gap = `${gap}px`;
 
     for (const day of days) {
       const col = document.createElement('div');
       col.className = 'col';
       if (day.key === currentDay) col.classList.add('today');
       else if (goal > 0 && day.count > goal) col.classList.add('over');
-      col.title = `${labelFmt.format(day.date)} — ${day.count} ${plural(day.count, 'cigarette')}`;
+      col.title = `${barTitleFmt.format(day.date)} — ${day.count} ${plural(day.count, 'cigarette')}`;
 
       const fill = document.createElement('i');
       fill.style.height = `${(day.count / scale) * 100}%`;
       col.appendChild(fill);
-      el.chart.appendChild(col);
+      container.appendChild(col);
     }
 
-    el.goalLine.style.display = goal > 0 ? '' : 'none';
-    el.goalLine.style.bottom = `${(goal / scale) * 100}%`;
+    goalLine.style.display = goal > 0 ? '' : 'none';
+    goalLine.style.bottom = `${(goal / scale) * 100}%`;
+  }
 
-    // Moyenne sur les jours réellement suivis, au plus tôt il y a 14 jours.
-    const tracked = days.filter((d) => d.key >= (Object.keys(state.log).sort()[0] || '9999'));
-    if (tracked.length) {
-      const total = tracked.reduce((sum, d) => sum + d.count, 0);
-      el.avg.textContent = `moy. ${(total / tracked.length).toFixed(1).replace('.', ',')}/j`;
+  const average = (days) => days.reduce((sum, d) => sum + d.count, 0) / days.length;
+  const decimal = (n) => n.toFixed(1).replace('.', ',');
+
+  function renderChart(goal) {
+    const days = dayList(WINDOW_DAYS);
+    drawBars(el.chart, el.goalLine, days, goal, 4);
+
+    const tracked = trackedDays(days);
+    el.avg.textContent = tracked.length ? `moy. ${decimal(average(tracked))}/j` : '—';
+  }
+
+  /* ---------- Résultats ---------- */
+
+  let period = 7;
+
+  const rowFmt = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+  const narrowFmt = new Intl.DateTimeFormat('fr-FR', { weekday: 'narrow' });
+  const shortDateFmt = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' });
+
+  function renderResults() {
+    for (const button of el.periods.children) {
+      button.setAttribute('aria-pressed', String(Number(button.dataset.days) === period));
+    }
+
+    const goal = state.goal;
+    const days = dayList(period);
+    const tracked = trackedDays(days);
+
+    $('results-empty').hidden = tracked.length > 0;
+    $('results-content').hidden = tracked.length === 0;
+    if (!tracked.length) return;
+
+    const total = tracked.reduce((sum, d) => sum + d.count, 0);
+    const mean = average(tracked);
+
+    $('r-total').textContent = total;
+    $('r-average').textContent = decimal(mean);
+    $('r-within').textContent = `${tracked.filter((d) => d.count <= goal).length} / ${tracked.length}`;
+
+    // Tendance : même durée, juste avant la fenêtre courante.
+    const previous = trackedDays(dayList(period * 2).slice(0, period));
+    const trend = $('r-trend');
+    const previousMean = previous.length ? average(previous) : null;
+    if (previousMean) {
+      const change = Math.round(((mean - previousMean) / previousMean) * 100);
+      trend.textContent = `${change > 0 ? '+' : ''}${change} %`;
+      trend.className = change < 0 ? 'good' : change > 0 ? 'bad' : '';
     } else {
-      el.avg.textContent = '—';
+      trend.textContent = '—'; // pas d'historique antérieur : rien à comparer
+      trend.className = '';
+    }
+
+    // Le graphe couvre la même plage que le détail : pas de colonnes vides
+    // pour des jours antérieurs au début du suivi.
+    drawBars(el.rChart, el.rGoalLine, tracked, goal,
+      tracked.length > 30 ? 1 : tracked.length > 7 ? 2 : 5);
+
+    // Une étiquette par jour tient jusqu'à une semaine, pas au-delà.
+    el.rAxis.textContent = '';
+    el.rAxis.className = tracked.length <= 7 ? 'axis axis--cols' : 'axis';
+    const labels = tracked.length <= 7
+      ? tracked.map((d) => narrowFmt.format(d.date))
+      : [shortDateFmt.format(tracked[0].date), shortDateFmt.format(tracked[tracked.length - 1].date)];
+    for (const text of labels) {
+      const span = document.createElement('span');
+      span.textContent = text;
+      el.rAxis.appendChild(span);
+    }
+
+    renderHours(tracked);
+    renderDayRows(tracked, goal);
+  }
+
+  function renderHours(tracked) {
+    const buckets = new Array(24).fill(0);
+    for (const day of tracked) {
+      for (const timestamp of entries(day.key)) buckets[new Date(timestamp).getHours()]++;
+    }
+
+    const busiest = Math.max(...buckets);
+    const peakHour = busiest > 0 ? buckets.indexOf(busiest) : null;
+
+    el.rHours.textContent = '';
+    buckets.forEach((count, hour) => {
+      const bar = document.createElement('i');
+      bar.style.height = `${(count / Math.max(busiest, 1)) * 100}%`;
+      if (hour === peakHour) bar.classList.add('peak');
+      bar.title = `${hour} h — ${count} ${plural(count, 'cigarette')}`;
+      el.rHours.appendChild(bar);
+    });
+
+    el.rPeak.textContent = peakHour === null ? '' : `pic vers ${peakHour} h`;
+  }
+
+  function renderDayRows(tracked, goal) {
+    el.rDays.textContent = '';
+
+    for (const day of [...tracked].reverse()) {
+      const row = document.createElement('div');
+      row.className = 'row';
+
+      const label = document.createElement('span');
+      label.textContent = day.key === currentDay ? 'aujourd’hui' : rowFmt.format(day.date);
+
+      const count = document.createElement('span');
+      count.className = 'n';
+      count.textContent = day.count;
+
+      // Écart à l'objectif *actuel* : les objectifs passés ne sont pas conservés.
+      const delta = day.count - goal;
+      const tag = document.createElement('span');
+      tag.className = `tag ${delta > 0 ? 'over' : 'under'}`;
+      tag.textContent = delta > 0 ? `+${delta}` : delta === 0 ? 'pile' : `${delta}`;
+
+      row.append(label, count, tag);
+      el.rDays.appendChild(row);
     }
   }
 
-  /* ---------- Feuille de réglages ---------- */
+  /* ---------- Feuilles ---------- */
 
-  const openSheet = () => document.body.classList.add('sheet-open');
-  const closeSheet = () => document.body.classList.remove('sheet-open');
+  // Déclarées en `function` (donc hissées) : render() les appelle alors qu'elles
+  // sont écrites plus bas dans le fichier.
+  function openSheet(name) {
+    if (name === 'results') renderResults();
+    document.body.dataset.sheet = name;
+    document.body.classList.add('sheet-open');
+  }
 
-  $('open-settings').addEventListener('click', openSheet);
+  function closeSheet() {
+    document.body.classList.remove('sheet-open');
+  }
+
+  function sheetOpen(name) {
+    return document.body.classList.contains('sheet-open')
+      && document.body.dataset.sheet === name;
+  }
+
+  $('open-settings').addEventListener('click', () => openSheet('settings'));
+  $('open-results').addEventListener('click', () => openSheet('results'));
   el.scrim.addEventListener('click', closeSheet);
   document.addEventListener('keydown', (e) => e.key === 'Escape' && closeSheet());
+
+  el.periods.addEventListener('click', (e) => {
+    const button = e.target.closest('[data-days]');
+    if (button) {
+      period = Number(button.dataset.days);
+      renderResults();
+    }
+  });
+
+  // Le mini-graphe de l'accueil sert de raccourci vers les résultats détaillés.
+  const historySection = $('history');
+  historySection.addEventListener('click', () => openSheet('results'));
+  historySection.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      openSheet('results');
+    }
+  });
 
   el.minus.addEventListener('click', () => setGoal(state.goal - 1));
   el.plus.addEventListener('click', () => setGoal(state.goal + 1));

@@ -34,12 +34,31 @@ L'icône apparaît avec les autres apps. Ouverte depuis là, elle s'affiche en p
 
 - **J'en fume une** — enregistre une cigarette et décrémente le compteur.
 - **Annuler la dernière** — en cas de faux appui.
+- **Icône graphique** — ouvre les résultats détaillés (le mini-graphe du bas y
+  mène aussi).
 - **Roue crantée** — règle l'objectif quotidien (0 à 60), remet la journée à
   zéro, ou efface l'historique.
 
 L'anneau se remplit au fil de la journée et change de couleur : vert, puis orange
 quand il reste peu de marge, puis rouge au-delà de l'objectif. Sous le compteur,
 les 14 derniers jours en barres, avec l'objectif en pointillés.
+
+### Résultats
+
+Sur 7, 30 ou 90 jours :
+
+- **total**, **moyenne par jour**, **jours passés dans l'objectif** et
+  **tendance** par rapport à la période précédente de même durée ;
+- un histogramme **par jour**, objectif en pointillés ;
+- une répartition **par heure**, qui fait ressortir l'heure de pic ;
+- le **détail jour par jour**, avec l'écart à l'objectif.
+
+Deux partis pris à connaître pour lire ces chiffres :
+
+- les jours antérieurs au premier enregistrement sont exclus, sinon ils
+  compteraient comme des journées à zéro et fausseraient les moyennes ;
+- l'écart à l'objectif utilise l'objectif **actuel**, y compris sur les jours
+  passés — les objectifs précédents ne sont pas conservés.
 
 Un objectif à **0** est valide : utile pour une phase d'arrêt complet, où toute
 cigarette compte comme un écart.
