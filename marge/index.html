@@ -1444,11 +1444,14 @@
       const node = el.tagTemplate.content.firstElementChild.cloneNode(true);
       const set = (selector, value) => { node.querySelector(selector).textContent = value; };
 
-      const label = perPiece
-        ? f.name
+      // Un format d'un kilo, c'est de la vente au kilo : on l'écrit ainsi
+      // plutôt qu'en « 1 000 g », qui se lit mal sur une étiquette.
+      const perKilo = !perPiece && Math.abs(f.weightKg - 1) < 1e-9;
+      const label = perPiece || perKilo
+        ? (perKilo ? `${f.name} au kilo`.replace(/^ /, '') : f.name)
         : f.weightKg > 0 ? `${f.name} ${grams(f.weightKg * 1000)}` : f.name;
       set('.t-name', product ? `${product} — ${label}` : label);
-      set('.t-unit', perPiece ? '/pièce' : `/${formatDecimal(f.weightKg * 1000, 0)} g`);
+      set('.t-unit', perPiece ? '/pièce' : perKilo ? '/kg' : `/${formatDecimal(f.weightKg * 1000, 0)} g`);
       set('.t-ttc', euro(f.priceTTC));
       set('.t-ht', euro(f.priceHT));
 
@@ -1622,7 +1625,9 @@
       batchMargin: result.batchMargin,
       batchCoefficient: result.batchCoefficient,
       formats: result.formats.map((f) => ({
-        label: perPiece ? f.name : `${f.name} ${grams(f.weightKg * 1000)}`,
+        label: perPiece ? f.name
+          : Math.abs(f.weightKg - 1) < 1e-9 ? `${f.name} au kilo`
+          : `${f.name} ${grams(f.weightKg * 1000)}`,
         count: f.count,
         priceTTC: f.priceTTC,
         totalHT: f.totalHT,

@@ -55,6 +55,11 @@ ramenés tout seuls au prix de référence.
 La production se compte **en kilos** ou **en pièces**. En pièces, un format n'a
 pas de poids : une pièce est une pièce.
 
+Pour vendre **au kilo**, il suffit d'un format de 1 000 g sans contenant : son
+nombre est alors le nombre de kilos vendus en vrac, et l'étiquette affiche le
+prix au kilo. Un même lot peut donc partir moitié en bouteilles, moitié au
+kilo.
+
 Si la répartition ne tombe pas juste, l'app le dit : ce qui reste non
 conditionné pèse sur la marge du lot, ce qui est le comportement voulu.
 
