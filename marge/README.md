@@ -21,29 +21,87 @@ fonctionne hors connexion.
 
 ## Le calcul
 
-Le prix d'achat est **toujours saisi au kilo**. En mode portion, il est ramené au
-poids servi :
+Tout part de ce qui est **réellement produit**, pas de ce qui est acheté. Avec
+4 kg d'avocats on ne fait pas 4 kg de guacamole mais 3,2 : c'est sur 3,2 que la
+marge se calcule.
+
+Puis le lot se répartit entre les **formats de conditionnement**. Chaque unité
+vendue emporte sa part du lot — son poids rapporté à la production — donc sa
+part de matière et de main d'œuvre. Le contenant, lui, se paie entier à chaque
+unité.
 
 ```
-PA matière   = prix d'achat au kg × (poids portion / 1000)
-PA HT total  = PA matière + main d'œuvre + emballage
+coût matière du lot = Σ (quantité × prix) de chaque ingrédient
+part d'une unité    = poids du format / quantité produite
+contenant par unité = (nombre de boîtes × prix d'une boîte) / nombre d'unités
+revient d'une unité = (matière + main d'œuvre) × sa part + son contenant
 ```
+
+Le **nombre de boîtes** se remplit tout seul avec le nombre d'unités : une
+barquette par portion. Il ne se renseigne que quand les deux diffèrent — un
+couvercle vendu à part (deux boîtes par unité), un double emballage, de la
+casse, ou une partie vendue en vrac.
+
+C'est ce qui fait qu'**une barquette de 100 g ne revient pas à la moitié d'une
+barquette de 200 g** : à 0,20 €, le contenant pèse 1 €/kg sur du 200 g et
+2 €/kg sur du 100 g. Aucun « prix d'emballage au kilo » ne peut être juste pour
+les deux à la fois — d'où la saisie par format.
+
+La main d'œuvre se saisit **pour tout le lot** (répartie au prorata du poids) ou
+**par unité vendue**. Les ingrédients se cumulent, chacun dans l'unité de sa
+facture — au kilo, au litre ou à la pièce ; les grammes et les millilitres sont
+ramenés tout seuls au prix de référence.
+
+La production se compte **en kilos** ou **en pièces**. En pièces, un format n'a
+pas de poids : une pièce est une pièce.
+
+Pour vendre **au kilo**, il suffit d'un format de 1 000 g sans contenant : son
+nombre est alors le nombre de kilos vendus en vrac, et l'étiquette affiche le
+prix au kilo. Un même lot peut donc partir moitié en bouteilles, moitié au
+kilo.
+
+Si la répartition ne tombe pas juste, l'app le dit : ce qui reste non
+conditionné pèse sur la marge du lot, ce qui est le comportement voulu.
 
 Puis, selon la méthode choisie :
 
-| Méthode        | Formule                                  |
-| -------------- | ---------------------------------------- |
-| Coefficient    | `PV HT = PA HT total × coefficient`       |
-| Taux de marque | `PV HT = PA HT total / (1 − taux / 100)`  |
-| Prix visé      | `PV HT = PV TTC visé / (1 + TVA / 100)`   |
+| Méthode        | Formule                                       |
+| -------------- | --------------------------------------------- |
+| Coefficient    | `PV HT = revient × coefficient`                |
+| Taux de marque | `PV HT = revient / (1 − taux / 100)`           |
+| Prix visé      | `PV HT = PV TTC visé / (1 + TVA / 100)`        |
 
-L'**arrondi psychologique** monte le prix TTC à la finale `,90` supérieure
+Coefficient et taux de marque s'appliquent à tous les formats ; le prix visé se
+saisit format par format, puisqu'il n'a de sens que pour un format donné.
+
+L'**arrondi psychologique** monte chaque prix TTC à la finale `,90` supérieure
 (8,32 € → 8,90 € ; 8,95 € → 9,90 €). Quand il est actif, la marge, le taux de
 marque et le coefficient sont recalculés **sur le prix arrondi** : ce sont les
-chiffres du prix réellement affiché en boutique, pas ceux du prix théorique.
+chiffres du prix réellement affiché en boutique.
 
-Les cas limites ne cassent rien : champs vides, taux de marque à 100 % ou plus,
-portion de 0 g, TVA à 0 % — le prix retombe à `0,00 €` plutôt que sur une erreur.
+L'app affiche **une étiquette par format**, puis un récapitulatif du lot entier :
+coût de revient total, chiffre d'affaires et marge réelle.
+
+Les cas limites ne cassent rien : champs vides, quantité produite à zéro, taux de
+marque à 100 % ou plus, TVA à 0 % — le prix retombe à `0,00 €`. Sans quantité
+produite, aucun prix n'est affiché, même si le contenant est déjà connu : il
+ignorerait la matière.
+
+### Un exemple
+
+| | |
+| --- | --- |
+| Avocats | 4 kg à 9,50 €/kg = 38,00 € |
+| Citrons verts | 6 pièces à 0,40 € = 2,40 € |
+| Coriandre | 60 g à 18,00 €/kg = 1,08 € |
+| **Coût matière** | **41,48 €** |
+| Production | 3,2 kg — rendement 80 % |
+| Main d'œuvre | 20,00 € pour le lot |
+| 10 barquettes de 200 g | 10 boîtes à 0,20 € — revient 4,04 € → **10,66 € TTC** |
+| 12 barquettes de 100 g | 12 boîtes à 0,20 € — revient 2,12 € → **5,59 € TTC** |
+| Coût de revient total | 65,88 € |
+| Chiffre d'affaires HT | 164,70 € |
+| **Marge sur la production** | **98,82 €** |
 
 ## Les alertes
 
@@ -56,11 +114,14 @@ portion de 0 g, TVA à 0 % — le prix retombe à `0,00 €` plutôt que sur une
 
 ## Où sont les données
 
-Dans le `localStorage` du navigateur, sous la clé `botti.marge.v1` : un tableau
-de produits, le plus récent en premier.
+Dans le `localStorage` du navigateur, sous la clé `botti.marge.v2` : un tableau
+de produits, le plus récent en premier, recette et formats compris.
 
 ```json
-[{ "name": "Fraises gariguette", "unit": "kg", "priceTTC": 8.9, "coefficient": 2.56 }]
+[{ "name": "Guacamole", "produced": 3.2, "producedUnit": "kg",
+   "batchCost": 65.88, "batchMargin": 98.82,
+   "formats": [{ "label": "Barquette 200 g", "count": 10, "priceTTC": 10.66 }],
+   "ingredients": [{ "name": "Avocats", "qty": "4", "unit": "kg", "price": "9,50" }] }]
 ```
 
 Rien ne sort du téléphone. En contrepartie : effacer les données de navigation

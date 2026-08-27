@@ -1,6 +1,6 @@
 /* Service worker : rend l'app utilisable hors connexion une fois installée. */
 
-const CACHE = 'marge-v1';
+const CACHE = 'marge-v5';
 
 const ASSETS = [
   './',
