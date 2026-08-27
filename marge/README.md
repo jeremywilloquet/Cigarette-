@@ -33,8 +33,14 @@ unité.
 ```
 coût matière du lot = Σ (quantité × prix) de chaque ingrédient
 part d'une unité    = poids du format / quantité produite
+contenant par unité = (nombre de boîtes × prix d'une boîte) / nombre d'unités
 revient d'une unité = (matière + main d'œuvre) × sa part + son contenant
 ```
+
+Le **nombre de boîtes** se remplit tout seul avec le nombre d'unités : une
+barquette par portion. Il ne se renseigne que quand les deux diffèrent — un
+couvercle vendu à part (deux boîtes par unité), un double emballage, de la
+casse, ou une partie vendue en vrac.
 
 C'est ce qui fait qu'**une barquette de 100 g ne revient pas à la moitié d'une
 barquette de 200 g** : à 0,20 €, le contenant pèse 1 €/kg sur du 200 g et
@@ -86,8 +92,8 @@ ignorerait la matière.
 | **Coût matière** | **41,48 €** |
 | Production | 3,2 kg — rendement 80 % |
 | Main d'œuvre | 20,00 € pour le lot |
-| 10 barquettes de 200 g | revient 4,04 € → **10,66 € TTC** |
-| 12 barquettes de 100 g | revient 2,12 € → **5,59 € TTC** |
+| 10 barquettes de 200 g | 10 boîtes à 0,20 € — revient 4,04 € → **10,66 € TTC** |
+| 12 barquettes de 100 g | 12 boîtes à 0,20 € — revient 2,12 € → **5,59 € TTC** |
 | Coût de revient total | 65,88 € |
 | Chiffre d'affaires HT | 164,70 € |
 | **Marge sur la production** | **98,82 €** |

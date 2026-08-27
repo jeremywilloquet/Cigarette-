@@ -263,9 +263,12 @@
   }
   .ing-grid .control, .fmt-grid .control { min-height: 46px; padding: 0 10px; }
   .ing-grid .control input, .fmt-grid .control input { font-size: 16px; }
-  .fmt-count { grid-column: 1; min-width: 0; }
-  .fmt-weight { grid-column: 2; min-width: 0; width: 118px; }
-  .fmt-pack, .fmt-target { grid-column: 1 / -1; min-width: 0; }
+  .fmt-grid { grid-template-columns: 1fr 1fr; }
+  .fmt-count, .fmt-boxes { grid-column: 1; min-width: 0; }
+  .fmt-weight, .fmt-pack { grid-column: 2; min-width: 0; }
+  .fmt-target { grid-column: 1 / -1; min-width: 0; }
+  /* « boîtes » est long : on l'allège pour laisser de la place au champ. */
+  .fmt-boxes .suffix { font-size: 11.5px; }
   .ing-qty { grid-column: 1; min-width: 0; }
   .unit-pick { grid-column: 2; }
   .ing-price { grid-column: 1 / -1; min-width: 0; }
@@ -742,10 +745,15 @@
                  aria-label="Poids du format">
           <span class="suffix">g</span>
         </div>
+        <div class="control fmt-boxes">
+          <input class="fmt-b" inputmode="decimal" autocomplete="off" maxlength="6"
+                 aria-label="Nombre de contenants utilisés">
+          <span class="suffix">boîtes</span>
+        </div>
         <div class="control fmt-pack">
           <input class="fmt-p" inputmode="decimal" autocomplete="off" placeholder="0" maxlength="8"
-                 aria-label="Coût du contenant">
-          <span class="suffix">€ le contenant</span>
+                 aria-label="Prix d'un contenant">
+          <span class="suffix">€</span>
         </div>
         <div class="control fmt-target" hidden>
           <input class="fmt-t" inputmode="decimal" autocomplete="off" placeholder="0" maxlength="8"
@@ -760,6 +768,7 @@
   <section class="card">
     <h2><span class="step" aria-hidden="true">3</span> Comment je le conditionne</h2>
     <p class="hint" id="fmt-help">Un lot peut partir en plusieurs formats. Le contenant se paie à chaque barquette : à 0,20 €, il pèse 1 €/kg sur du 200 g et 2 €/kg sur du 100 g — les deux formats n'ont donc pas le même prix de revient.</p>
+    <p class="hint">Le nombre de boîtes se remplit tout seul avec le nombre d'unités. Ne le renseigne que s'il diffère : un couvercle vendu à part, un double emballage, de la casse.</p>
     <div class="fmt-list" id="fmt-list"></div>
     <button type="button" class="add-line" id="fmt-add">+ Ajouter un format</button>
     <p class="fill-note" id="fill-note">—</p>
@@ -1036,7 +1045,11 @@
       const count = Math.max(f.count, 0);
       const weightKg = perPiece ? 1 : Math.max(f.weightG, 0) / 1000;
       const share = usable ? weightKg / produced : 0;
-      return { ...f, count, weightKg, share };
+      // Laissé vide, le nombre de contenants vaut le nombre d'unités : une
+      // barquette par portion. Renseigné, il l'emporte — couvercle vendu à
+      // part, double emballage, casse.
+      const boxes = f.boxes > 0 ? f.boxes : count;
+      return { ...f, count, weightKg, share, boxes };
     });
 
     const totalUnits = formats.reduce((sum, f) => sum + f.count, 0);
@@ -1051,7 +1064,10 @@
     const priced = formats.map((f) => {
       const material = materialCost * f.share;
       const labor = laborPerUnit(f);
-      const packaging = Math.max(f.packaging, 0);
+      const boxPrice = Math.max(f.packaging, 0);
+      const packagingTotal = f.boxes * boxPrice;
+      // Ramené à l'unité vendue : deux boîtes par portion en coûtent deux.
+      const packaging = f.count > EPSILON ? packagingTotal / f.count : 0;
       const totalHT = usable && f.weightKg > EPSILON ? material + labor + packaging : 0;
 
       let theoreticalHT = 0;
@@ -1080,6 +1096,9 @@
         name: f.name,
         count: f.count,
         weightKg: f.weightKg,
+        boxes: f.boxes,
+        boxPrice,
+        packagingTotal,
         material, labor, packaging, totalHT,
         priceHT, priceTTC, theoreticalTTC,
         rounded: input.round && Math.round(priceTTC * 100) !== Math.round(theoreticalTTC * 100),
@@ -1095,7 +1114,7 @@
     // Le lot : le coût réellement engagé, face au chiffre d'affaires des
     // unités effectivement conditionnées. Ce qui n'est pas mis en barquette
     // pèse donc sur la marge, ce qui est le comportement voulu.
-    const packagingTotal = priced.reduce((sum, f) => sum + f.packaging * f.count, 0);
+    const packagingTotal = priced.reduce((sum, f) => sum + f.packagingTotal, 0);
     const laborBatch = input.laborScope === 'unit' ? laborTotal * totalUnits : laborTotal;
     const batchCost = usable ? materialCost + laborBatch + packagingTotal : 0;
     const batchRevenueHT = priced.reduce((sum, f) => sum + f.lineRevenueHT, 0);
@@ -1268,7 +1287,8 @@
   }
 
   const ING_FIELDS = { name: '.ing-name', qty: '.ing-q', unit: '.ing-u', price: '.ing-p' };
-  const FMT_FIELDS = { name: '.fmt-name', count: '.fmt-n', weightG: '.fmt-w', packaging: '.fmt-p', targetTTC: '.fmt-t' };
+  const FMT_FIELDS = { name: '.fmt-name', count: '.fmt-n', weightG: '.fmt-w',
+    boxes: '.fmt-b', packaging: '.fmt-p', targetTTC: '.fmt-t' };
 
   const addIngredient = (prefill) => addRow(el.ingTemplate, el.ingList, ING_FIELDS, prefill);
   const addFormat = (prefill) => addRow(el.fmtTemplate, el.fmtList, FMT_FIELDS, prefill);
@@ -1290,6 +1310,7 @@
       name: node.querySelector('.fmt-name').value.trim() || `Format ${index + 1}`,
       count: parseNumber(node.querySelector('.fmt-n').value),
       weightG: parseNumber(node.querySelector('.fmt-w').value),
+      boxes: parseNumber(node.querySelector('.fmt-b').value),
       packaging: parseNumber(node.querySelector('.fmt-p').value),
       targetTTC: parseNumber(node.querySelector('.fmt-t').value),
     }));
@@ -1359,8 +1380,12 @@
     // Coût de chaque format, et contrôle de la répartition.
     for (const [index, node] of [...el.fmtList.children].entries()) {
       const f = result.formats[index];
+      // Le champ vide annonce ce qu'il vaut : autant de boîtes que d'unités.
+      node.querySelector('.fmt-b').placeholder = f ? formatDecimal(f.count, 0) : '0';
       node.querySelector('.fmt-cost').textContent = f && f.totalHT > 0
-        ? `revient ${euro(f.totalHT)} l'unité · ${euro(f.priceTTC)} TTC`
+        ? `${formatDecimal(f.boxes, 0)} contenant${f.boxes > 1 ? 's' : ''} `
+          + `= ${euro(f.packagingTotal)} · revient ${euro(f.totalHT)} l'unité `
+          + `· ${euro(f.priceTTC)} TTC`
         : '—';
     }
     renderFill(perPiece);
@@ -1611,7 +1636,7 @@
   });
 
   addIngredient();
-  addFormat({ name: 'Barquette', count: '', weightG: '250', packaging: '' });
+  addFormat({ name: 'Barquette', count: '', weightG: '250', boxes: '', packaging: '' });
   render();
   renderList();
 
