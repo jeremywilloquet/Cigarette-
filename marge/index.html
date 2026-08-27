@@ -242,7 +242,7 @@
 
   /* ---------- Lignes d'ingrédients ---------- */
 
-  .ing {
+  .ing, .fmt {
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -251,18 +251,21 @@
     border-radius: 10px;
     background: var(--paper);
   }
-  .ing-top { display: flex; align-items: center; gap: 8px; }
-  .ing-top .control { flex: 1; min-height: 42px; }
+  .ing-top, .fmt-top { display: flex; align-items: center; gap: 8px; }
+  .ing-top .control, .fmt-top .control { flex: 1; min-height: 42px; }
   /* Quantité et unité côte à côte, prix sur toute la largeur en dessous.
      À trois de front sur un écran de 320 px, le champ prix tombait à zéro
      pixel dès que le suffixe s'allongeait (« €/pièce ») : inutilisable. */
-  .ing-grid {
+  .ing-grid, .fmt-grid {
     display: grid;
     grid-template-columns: 1fr auto;
     gap: 6px;
   }
-  .ing-grid .control { min-height: 46px; padding: 0 10px; }
-  .ing-grid .control input { font-size: 16px; }
+  .ing-grid .control, .fmt-grid .control { min-height: 46px; padding: 0 10px; }
+  .ing-grid .control input, .fmt-grid .control input { font-size: 16px; }
+  .fmt-count { grid-column: 1; min-width: 0; }
+  .fmt-weight { grid-column: 2; min-width: 0; width: 118px; }
+  .fmt-pack, .fmt-target { grid-column: 1 / -1; min-width: 0; }
   .ing-qty { grid-column: 1; min-width: 0; }
   .unit-pick { grid-column: 2; }
   .ing-price { grid-column: 1 / -1; min-width: 0; }
@@ -289,7 +292,7 @@
   .unit-pick select:focus { outline: none; }
   .unit-pick:focus-within { border-color: var(--ocre); }
 
-  .ing-cost {
+  .ing-cost, .fmt-cost {
     margin: 0;
     text-align: right;
     font-family: var(--mono);
@@ -298,7 +301,7 @@
     color: var(--ink-soft);
   }
 
-  .ing-list { display: flex; flex-direction: column; gap: 10px; }
+  .ing-list, .fmt-list { display: flex; flex-direction: column; gap: 10px; }
 
   .add-line {
     min-height: 44px;
@@ -340,7 +343,13 @@
 
   /* ---------- Bloc « sur la production », dans l'étiquette ---------- */
 
-  .batch { margin-top: 4px; }
+  .batch {
+    background: var(--green-mid);
+    border-radius: var(--r-tag, 20px);
+    border-radius: 20px;
+    padding: 18px 20px 20px;
+    color: var(--on-green);
+  }
   .batch h3 {
     margin: 0 0 2px;
     font-weight: 600;
@@ -349,7 +358,20 @@
     text-transform: uppercase;
     color: var(--on-green-faint);
   }
-  .batch .lead { margin: 0 0 8px; font-family: var(--mono); font-size: 12px; color: var(--on-green-soft); }
+  .batch .lead { margin: 0 0 12px; font-family: var(--mono); font-size: 12px; line-height: 1.4; color: var(--on-green-soft); }
+  .batch hr { height: 1px; margin: 12px 0; border: 0; background: var(--on-green-rule); }
+
+  .tags { display: flex; flex-direction: column; gap: 4px; }
+
+  /* Message quand la répartition ne tombe pas juste. */
+  .fill-note {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--ink-soft);
+  }
+  .fill-note.over { color: var(--red); font-weight: 500; }
 
   /* Raccourcis de TVA */
   .chips { display: flex; gap: 8px; margin-top: 2px; }
@@ -700,25 +722,51 @@
     </div>
   </section>
 
-  <section class="card">
-    <h2><span class="step" aria-hidden="true">3</span> Unité de vente</h2>
-    <div class="seg" id="unit">
-      <label class="seg-opt"><input type="radio" name="unit" value="kg" checked><span>Au kilo</span></label>
-      <label class="seg-opt"><input type="radio" name="unit" value="portion"><span>À la portion</span></label>
-      <label class="seg-opt" id="opt-piece" hidden><input type="radio" name="unit" value="piece"><span>À la pièce</span></label>
-    </div>
-    <div class="field" id="portion-field" hidden>
-      <span class="label" id="l-portion">Poids de la portion (g)</span>
-      <div class="control">
-        <input id="portion" inputmode="decimal" autocomplete="off" value="250" maxlength="6" aria-labelledby="l-portion">
-        <span class="suffix">g</span>
+  <template id="fmt-template">
+    <div class="fmt">
+      <div class="fmt-top">
+        <div class="control">
+          <input class="text fmt-name" type="text" autocomplete="off" maxlength="30"
+                 placeholder="Barquette, bocal…" aria-label="Nom du format">
+        </div>
+        <button type="button" class="del fmt-del" aria-label="Retirer ce format">✕</button>
       </div>
+      <div class="fmt-grid">
+        <div class="control fmt-count">
+          <input class="fmt-n" inputmode="decimal" autocomplete="off" placeholder="0" maxlength="6"
+                 aria-label="Nombre">
+          <span class="suffix">×</span>
+        </div>
+        <div class="control fmt-weight">
+          <input class="fmt-w" inputmode="decimal" autocomplete="off" placeholder="0" maxlength="6"
+                 aria-label="Poids du format">
+          <span class="suffix">g</span>
+        </div>
+        <div class="control fmt-pack">
+          <input class="fmt-p" inputmode="decimal" autocomplete="off" placeholder="0" maxlength="8"
+                 aria-label="Coût du contenant">
+          <span class="suffix">€ le contenant</span>
+        </div>
+        <div class="control fmt-target" hidden>
+          <input class="fmt-t" inputmode="decimal" autocomplete="off" placeholder="0" maxlength="8"
+                 aria-label="Prix de vente TTC visé">
+          <span class="suffix">€ TTC visé</span>
+        </div>
+      </div>
+      <p class="fmt-cost">= 0,00 €</p>
     </div>
-    <p class="hint" id="sales-hint">Renseigne la quantité produite pour connaître le nombre d'unités vendables.</p>
+  </template>
+
+  <section class="card">
+    <h2><span class="step" aria-hidden="true">3</span> Comment je le conditionne</h2>
+    <p class="hint" id="fmt-help">Un lot peut partir en plusieurs formats. Le contenant se paie à chaque barquette : à 0,20 €, il pèse 1 €/kg sur du 200 g et 2 €/kg sur du 100 g — les deux formats n'ont donc pas le même prix de revient.</p>
+    <div class="fmt-list" id="fmt-list"></div>
+    <button type="button" class="add-line" id="fmt-add">+ Ajouter un format</button>
+    <p class="fill-note" id="fill-note">—</p>
   </section>
 
   <section class="card">
-    <h2><span class="step" aria-hidden="true">4</span> Main d'œuvre, emballage et TVA</h2>
+    <h2><span class="step" aria-hidden="true">4</span> Main d'œuvre et TVA</h2>
 
     <div class="field">
       <span class="label" id="l-labor">Main d'œuvre</span>
@@ -729,18 +777,6 @@
       <div class="scope" data-for="labor">
         <button type="button" data-scope="total" aria-pressed="true">pour tout le lot</button>
         <button type="button" data-scope="unit" aria-pressed="false">par unité vendue</button>
-      </div>
-    </div>
-
-    <div class="field">
-      <span class="label" id="l-pack">Emballage / contenant</span>
-      <div class="control">
-        <input id="pack" inputmode="decimal" autocomplete="off" placeholder="0" maxlength="12" aria-labelledby="l-pack">
-        <span class="suffix">€</span>
-      </div>
-      <div class="scope" data-for="pack">
-        <button type="button" data-scope="total" aria-pressed="false">pour tout le lot</button>
-        <button type="button" data-scope="unit" aria-pressed="true">par unité vendue</button>
       </div>
     </div>
 
@@ -784,12 +820,7 @@
     </div>
 
     <div class="field" id="f-targetPrice" hidden>
-      <span class="label" id="l-target">Prix de vente TTC visé (€)</span>
-      <div class="control">
-        <input id="target" inputmode="decimal" autocomplete="off" placeholder="0" maxlength="12" aria-labelledby="l-target">
-        <span class="suffix">€</span>
-      </div>
-      <p class="hint">Calcul inverse : le HT et la marge sont déduits du prix TTC affiché.</p>
+      <p class="hint">Calcul inverse : le prix visé se saisit format par format, à l'étape 3 — chaque format a le sien. Le HT et la marge en sont déduits.</p>
     </div>
   </section>
 
@@ -804,49 +835,62 @@
     </div>
   </section>
 
-  <div class="tagwrap">
-    <div class="cord" aria-hidden="true"></div>
-    <article class="tag" aria-live="polite">
-      <div class="tag-head">
-        <span class="punch" aria-hidden="true"></span>
-        <span class="tag-name" id="tag-name">Prix de vente</span>
-      </div>
-      <p class="price">
-        <b id="ttc">0,00 €</b>
-        <span class="unit" id="ttc-unit">/kg</span>
-      </p>
-      <p class="sub">soit <span id="ht">0,00 €</span> HT</p>
-      <p class="rounded-note" id="rounded-note" hidden></p>
-      <hr>
-      <div class="rows">
-        <div class="row">
-          <span class="k">Coût matière (HT)<span class="note" id="material-note" hidden></span></span>
-          <span class="v" id="material">0,00 €</span>
+  <template id="tag-template">
+    <div class="tagwrap">
+      <div class="cord" aria-hidden="true"></div>
+      <article class="tag">
+        <div class="tag-head">
+          <span class="punch" aria-hidden="true"></span>
+          <span class="tag-name t-name">Prix de vente</span>
         </div>
-        <div class="row"><span class="k">+ Main d'œuvre</span><span class="v" id="r-labor">0,00 €</span></div>
-        <div class="row"><span class="k">+ Emballage / contenant</span><span class="v" id="r-pack">0,00 €</span></div>
-        <div class="row strong"><span class="k">= Prix de revient HT</span><span class="v" id="total">0,00 €</span></div>
-      </div>
-      <hr>
-      <div class="rows">
-        <div class="row strong">
-          <span class="k">Marge brute HT<span class="loss-badge" id="loss" hidden>vente à perte</span></span>
-          <span class="v" id="margin">0,00 €</span>
-        </div>
-        <div class="row"><span class="k">Taux de marque réel</span><span class="v" id="rate">0,0 %</span></div>
-        <div class="row"><span class="k">Coefficient réel</span><span class="v" id="coefficient">×0,00</span></div>
-      </div>
-      <hr>
-      <div class="batch">
-        <h3>Sur la production</h3>
-        <p class="lead" id="batch-lead">—</p>
+        <p class="price">
+          <b class="t-ttc">0,00 €</b>
+          <span class="unit t-unit"></span>
+        </p>
+        <p class="sub">soit <span class="t-ht">0,00 €</span> HT</p>
+        <p class="rounded-note t-round" hidden></p>
+        <hr>
         <div class="rows">
-          <div class="row"><span class="k">Coût de revient total</span><span class="v" id="batch-cost">0,00 €</span></div>
-          <div class="row"><span class="k">Chiffre d'affaires HT</span><span class="v" id="batch-revenue">0,00 €</span></div>
-          <div class="row strong"><span class="k">Marge sur la production</span><span class="v" id="batch-margin">0,00 €</span></div>
+          <div class="row"><span class="k">Coût matière (HT)</span><span class="v t-mat">0,00 €</span></div>
+          <div class="row"><span class="k">+ Main d'œuvre</span><span class="v t-lab">0,00 €</span></div>
+          <div class="row"><span class="k">+ Contenant</span><span class="v t-pack">0,00 €</span></div>
+          <div class="row strong"><span class="k">= Prix de revient HT</span><span class="v t-total">0,00 €</span></div>
         </div>
+        <hr>
+        <div class="rows">
+          <div class="row strong">
+            <span class="k">Marge brute HT<span class="loss-badge t-loss" hidden>vente à perte</span></span>
+            <span class="v t-margin">0,00 €</span>
+          </div>
+          <div class="row"><span class="k">Taux de marque réel</span><span class="v t-rate">0,0 %</span></div>
+          <div class="row"><span class="k">Coefficient réel</span><span class="v t-coef">×0,00</span></div>
+          <div class="row"><span class="k t-linek">Marge sur ce format</span><span class="v t-line">0,00 €</span></div>
+        </div>
+      </article>
+    </div>
+  </template>
+
+  <div class="tags" id="tags"></div>
+
+  <div class="batch">
+    <h3>Sur toute la production</h3>
+    <p class="lead" id="batch-lead">—</p>
+    <div class="rows">
+      <div class="row"><span class="k">Matière</span><span class="v" id="b-mat">0,00 €</span></div>
+      <div class="row"><span class="k">+ Main d'œuvre</span><span class="v" id="b-lab">0,00 €</span></div>
+      <div class="row"><span class="k">+ Contenants</span><span class="v" id="b-pack">0,00 €</span></div>
+      <div class="row strong"><span class="k">= Coût de revient total</span><span class="v" id="b-cost">0,00 €</span></div>
+    </div>
+    <hr>
+    <div class="rows">
+      <div class="row"><span class="k">Chiffre d'affaires HT</span><span class="v" id="b-revenue">0,00 €</span></div>
+      <div class="row"><span class="k">Chiffre d'affaires TTC</span><span class="v" id="b-revenue-ttc">0,00 €</span></div>
+      <div class="row strong">
+        <span class="k">Marge sur la production<span class="loss-badge" id="b-loss" hidden>à perte</span></span>
+        <span class="v" id="b-margin">0,00 €</span>
       </div>
-    </article>
+      <div class="row"><span class="k">Coefficient global</span><span class="v" id="b-coef">×0,00</span></div>
+    </div>
   </div>
 
   <div class="badge" id="alert" role="status">
@@ -886,7 +930,7 @@
 (() => {
   'use strict';
 
-  const STORE = 'botti.marge.v1';
+  const STORE = 'botti.marge.v2';
   const NBSP = '\u00A0'; // espace insécable
   const EPSILON = 1e-9;
 
@@ -966,9 +1010,13 @@
   const PRICE_SUFFIX = { kg: '\u20AC/kg', L: '\u20AC/L', piece: '\u20AC/pi\u00E8ce' };
 
   /**
-   * Tout part du lot produit, pas de la matière achetée : c'est la quantité
-   * réellement obtenue qui donne le prix de revient. Avec 4 kg d'avocats on
-   * fait 3,2 kg de guacamole, et c'est sur 3,2 kg que la marge se calcule.
+   * Tout part du lot produit, pas de la matière achetée, puis se répartit
+   * entre les formats de conditionnement.
+   *
+   * Chaque unité vendue emporte une part du lot — son poids rapporté à la
+   * production — donc sa part de matière et de main d'œuvre. Le contenant,
+   * lui, se paie entier à chaque unité : c'est ce qui fait qu'une barquette
+   * de 100 g ne revient pas à la moitié d'une barquette de 200 g.
    */
   function compute(input) {
     let materialCost = 0;
@@ -979,72 +1027,93 @@
     }
 
     const produced = Math.max(input.producedQty, 0);
-    const portionKg = Math.max(input.portionWeightG, 0) / 1000;
-
-    // Nombre d'unités vendables dans le lot. Une portion de 0 g ou une
-    // production de 0 en donne zéro : tous les ratios retombent alors à 0.
-    let salesUnits = 0;
-    if (input.sellUnit === 'portion') {
-      if (portionKg > EPSILON) salesUnits = produced / portionKg;
-    } else {
-      salesUnits = produced;
-    }
-
-    const usable = salesUnits > EPSILON;
-
-    // Coût matière par unité vendue = coût du lot / nombre d'unités vendables.
-    const materialPerUnit = usable ? materialCost / salesUnits : 0;
-    const spread = (amount, scope) => {
-      // Sans quantité produite, même un coût déjà connu par unité (l'emballage)
-      // ne doit rien afficher : le prix qui en sortirait ignorerait la matière.
-      if (!usable) return 0;
-      const value = Math.max(amount, 0);
-      return scope === 'unit' ? value : value / salesUnits;
-    };
-    const labor = spread(input.labor, input.laborScope);
-    const packaging = spread(input.packaging, input.packagingScope);
-    const totalHT = materialPerUnit + labor + packaging;
-
-    // Toujours >= 1 : jamais de division par zéro sur la TVA.
+    const perPiece = input.producedUnit === 'piece';
     const vatFactor = 1 + Math.max(input.vatRate, 0) / 100;
+    const usable = produced > EPSILON;
 
-    let theoreticalHT = 0;
-    if (input.method === 'coefficient') {
-      theoreticalHT = totalHT * Math.max(input.coefficient, 0);
-    } else if (input.method === 'markRate') {
-      // Un taux de marque >= 100 % n'a pas de solution : on retombe sur 0.
-      const denominator = 1 - Math.max(input.markRate, 0) / 100;
-      theoreticalHT = denominator > EPSILON ? totalHT / denominator : 0;
-    } else {
-      // Calcul inverse : on remonte du TTC visé vers le HT.
-      theoreticalHT = Math.max(input.targetTTC, 0) / vatFactor;
-    }
-    if (!Number.isFinite(theoreticalHT) || theoreticalHT < 0) theoreticalHT = 0;
+    // Part du lot que représente une unité de chaque format.
+    const formats = input.formats.map((f) => {
+      const count = Math.max(f.count, 0);
+      const weightKg = perPiece ? 1 : Math.max(f.weightG, 0) / 1000;
+      const share = usable ? weightKg / produced : 0;
+      return { ...f, count, weightKg, share };
+    });
 
-    const theoreticalTTC = theoreticalHT * vatFactor;
-    const priceTTC = input.round && theoreticalTTC > 0 ? roundTo90(theoreticalTTC) : theoreticalTTC;
+    const totalUnits = formats.reduce((sum, f) => sum + f.count, 0);
+    const allocated = formats.reduce((sum, f) => sum + f.count * f.weightKg, 0);
 
-    // À partir d'ici, tout découle du prix retenu — celui affiché en boutique.
-    const priceHT = priceTTC / vatFactor;
-    const margin = priceHT - totalHT;
+    // La main d'œuvre saisie par unité se paie sur chaque contenant ;
+    // saisie au lot, elle se répartit au prorata du poids.
+    const laborTotal = Math.max(input.labor, 0);
+    const laborPerUnit = (f) =>
+      input.laborScope === 'unit' ? laborTotal : laborTotal * f.share;
+
+    const priced = formats.map((f) => {
+      const material = materialCost * f.share;
+      const labor = laborPerUnit(f);
+      const packaging = Math.max(f.packaging, 0);
+      const totalHT = usable && f.weightKg > EPSILON ? material + labor + packaging : 0;
+
+      let theoreticalHT = 0;
+      if (totalHT > EPSILON) {
+        if (input.method === 'coefficient') {
+          theoreticalHT = totalHT * Math.max(input.coefficient, 0);
+        } else if (input.method === 'markRate') {
+          // Un taux de marque >= 100 % n'a pas de solution : on retombe sur 0.
+          const denominator = 1 - Math.max(input.markRate, 0) / 100;
+          theoreticalHT = denominator > EPSILON ? totalHT / denominator : 0;
+        } else {
+          // Calcul inverse : chaque format a son propre prix visé.
+          theoreticalHT = Math.max(f.targetTTC, 0) / vatFactor;
+        }
+      }
+      if (!Number.isFinite(theoreticalHT) || theoreticalHT < 0) theoreticalHT = 0;
+
+      const theoreticalTTC = theoreticalHT * vatFactor;
+      const priceTTC = input.round && theoreticalTTC > 0 ? roundTo90(theoreticalTTC) : theoreticalTTC;
+
+      // À partir d'ici, tout découle du prix retenu — celui affiché en boutique.
+      const priceHT = priceTTC / vatFactor;
+      const margin = priceHT - totalHT;
+
+      return {
+        name: f.name,
+        count: f.count,
+        weightKg: f.weightKg,
+        material, labor, packaging, totalHT,
+        priceHT, priceTTC, theoreticalTTC,
+        rounded: input.round && Math.round(priceTTC * 100) !== Math.round(theoreticalTTC * 100),
+        margin,
+        markRate: priceHT > EPSILON ? (margin / priceHT) * 100 : 0,
+        coefficient: totalHT > EPSILON ? priceHT / totalHT : 0,
+        lineMargin: margin * f.count,
+        lineRevenueHT: priceHT * f.count,
+        lineRevenueTTC: priceTTC * f.count,
+      };
+    });
+
+    // Le lot : le coût réellement engagé, face au chiffre d'affaires des
+    // unités effectivement conditionnées. Ce qui n'est pas mis en barquette
+    // pèse donc sur la marge, ce qui est le comportement voulu.
+    const packagingTotal = priced.reduce((sum, f) => sum + f.packaging * f.count, 0);
+    const laborBatch = input.laborScope === 'unit' ? laborTotal * totalUnits : laborTotal;
+    const batchCost = usable ? materialCost + laborBatch + packagingTotal : 0;
+    const batchRevenueHT = priced.reduce((sum, f) => sum + f.lineRevenueHT, 0);
+    const batchRevenueTTC = priced.reduce((sum, f) => sum + f.lineRevenueTTC, 0);
 
     return {
-      materialCost, massBoughtKg, produced, salesUnits,
-      materialPerUnit, labor, packaging, totalHT,
-      priceHT, priceTTC, theoreticalTTC,
-      rounded: input.round && Math.round(priceTTC * 100) !== Math.round(theoreticalTTC * 100),
-      margin,
-      markRate: priceHT > EPSILON ? (margin / priceHT) * 100 : 0,
-      coefficient: totalHT > EPSILON ? priceHT / totalHT : 0,
-      // Rendement : ce qui sort rapporté à ce qui est entré, en poids.
+      materialCost, massBoughtKg, produced, perPiece,
+      formats: priced, totalUnits, allocated,
+      remaining: usable ? produced - allocated : 0,
+      laborBatch, packagingTotal,
+      batchCost, batchRevenueHT, batchRevenueTTC,
+      batchMargin: batchRevenueHT - batchCost,
+      batchCoefficient: batchCost > EPSILON ? batchRevenueHT / batchCost : 0,
+      batchMarkRate:
+        batchRevenueHT > EPSILON ? ((batchRevenueHT - batchCost) / batchRevenueHT) * 100 : 0,
       yieldRate:
-        input.producedUnit === 'kg' && massBoughtKg > EPSILON
-          ? (produced / massBoughtKg) * 100
-          : null,
-      batchCost: totalHT * salesUnits,
-      batchRevenueHT: priceHT * salesUnits,
-      batchMargin: margin * salesUnits,
-      isComplete: usable && totalHT > EPSILON && priceTTC > EPSILON,
+        !perPiece && massBoughtKg > EPSILON ? (produced / massBoughtKg) * 100 : null,
+      isComplete: usable && batchCost > EPSILON && batchRevenueTTC > EPSILON,
     };
   }
 
@@ -1053,7 +1122,7 @@
    * frais : en dessous de ×2 au kilo, la casse et les invendus ne sont
    * généralement pas couverts.
    */
-  function buildAlert(result, unit) {
+  function buildAlert(result) {
     if (!result.isComplete) {
       return {
         tone: '',
@@ -1061,33 +1130,33 @@
         message: "Renseigne le prix d'achat et la méthode de calcul : les indicateurs se mettent à jour à chaque frappe.",
       };
     }
-    const c = coef(result.coefficient);
+    const c = coef(result.batchCoefficient);
 
-    if (unit === 'kg' && result.coefficient < 2) {
+    if (!result.perPiece && result.batchCoefficient < 2) {
       return {
         tone: 'warn',
         title: 'Coefficient faible',
         message: `Coefficient de ${c} — faible pour du frais périssable en vente directe (usuellement ×2 à ×2,5 mini).`,
       };
     }
-    if (result.coefficient >= 2.5 && result.coefficient <= 3.5) {
+    if (result.batchCoefficient >= 2.5 && result.batchCoefficient <= 3.5) {
       return {
         tone: 'ok',
         title: 'Fourchette premium',
         message: `Coefficient ${c} — dans la fourchette premium (sec / apéritif).`,
       };
     }
-    if (result.markRate < 25) {
+    if (result.batchMarkRate < 25) {
       return {
         tone: 'warn',
         title: 'Marge serrée',
-        message: `Taux de marque réel de ${percent(result.markRate)} — marge serrée, vérifie que ça couvre la casse et les invendus.`,
+        message: `Taux de marque réel de ${percent(result.batchMarkRate)} — marge serrée, vérifie que ça couvre la casse et les invendus.`,
       };
     }
     return {
       tone: 'ok',
       title: 'Marge cohérente',
-      message: `Coefficient ${c} pour un taux de marque de ${percent(result.markRate)} : la marge couvre les coûts saisis.`,
+      message: `Coefficient ${c} pour un taux de marque de ${percent(result.batchMarkRate)} : la marge couvre les coûts saisis.`,
     };
   }
 
@@ -1103,24 +1172,26 @@
       return [];
     }
     if (!Array.isArray(raw)) return [];
-    const UNIT_VALUES = ['kg', 'portion', 'piece'];
     return raw.filter((entry) => entry && typeof entry === 'object').map((entry, index) => ({
       id: typeof entry.id === 'string' && entry.id ? entry.id : `legacy-${index}`,
       name: typeof entry.name === 'string' ? entry.name : 'Sans nom',
-      unit: UNIT_VALUES.includes(entry.unit) ? entry.unit : 'kg',
-      portionWeightG: Number.isFinite(entry.portionWeightG) ? entry.portionWeightG : null,
       produced: Number(entry.produced) || 0,
       producedUnit: entry.producedUnit === 'piece' ? 'piece' : 'kg',
-      salesUnits: Number(entry.salesUnits) || 0,
-      batchMargin: Number(entry.batchMargin) || 0,
-      ingredients: Array.isArray(entry.ingredients) ? entry.ingredients : [],
-      totalHT: Number(entry.totalHT) || 0,
-      priceHT: Number(entry.priceHT) || 0,
-      priceTTC: Number(entry.priceTTC) || 0,
       vatRate: Number(entry.vatRate) || 0,
-      coefficient: Number(entry.coefficient) || 0,
-      markRate: Number(entry.markRate) || 0,
-      createdAt: typeof entry.createdAt === 'string' ? entry.createdAt : new Date().toISOString(),
+      batchCost: Number(entry.batchCost) || 0,
+      batchRevenueTTC: Number(entry.batchRevenueTTC) || 0,
+      batchMargin: Number(entry.batchMargin) || 0,
+      batchCoefficient: Number(entry.batchCoefficient) || 0,
+      formats: (Array.isArray(entry.formats) ? entry.formats : []).map((f) => ({
+        label: typeof f.label === 'string' ? f.label : 'Format',
+        count: Number(f.count) || 0,
+        priceTTC: Number(f.priceTTC) || 0,
+        totalHT: Number(f.totalHT) || 0,
+      })),
+      ingredients: Array.isArray(entry.ingredients) ? entry.ingredients : [],
+      formatFields: Array.isArray(entry.formatFields) ? entry.formatFields : [],
+      createdAt:
+        typeof entry.createdAt === 'string' ? entry.createdAt : new Date().toISOString(),
     }));
   }
 
@@ -1139,26 +1210,19 @@
     materialTotal: $('material-total'),
     prod: $('prod'), prodSuffix: $('prod-suffix'),
     yieldHint: $('yield-hint'), costLabel: $('cost-label'), costUnit: $('cost-unit'),
-    portionField: $('portion-field'), portion: $('portion'),
-    optPiece: $('opt-piece'), salesHint: $('sales-hint'),
-    labor: $('labor'), pack: $('pack'), vat: $('vat'),
-    coef: $('coef'), mark: $('mark'), target: $('target'), round: $('round'),
+    fmtList: $('fmt-list'), fmtAdd: $('fmt-add'), fmtTemplate: $('fmt-template'),
+    fmtHelp: $('fmt-help'), fillNote: $('fill-note'),
+    labor: $('labor'), vat: $('vat'),
+    coef: $('coef'), mark: $('mark'), round: $('round'),
     name: $('name'), add: $('add'), addHint: $('add-hint'),
-    tagName: $('tag-name'), ttc: $('ttc'), ttcUnit: $('ttc-unit'), ht: $('ht'),
-    roundedNote: $('rounded-note'),
-    material: $('material'), materialNote: $('material-note'),
-    rLabor: $('r-labor'), rPack: $('r-pack'), total: $('total'),
-    margin: $('margin'), loss: $('loss'), rate: $('rate'), coefficient: $('coefficient'),
-    batchLead: $('batch-lead'), batchCost: $('batch-cost'),
-    batchRevenue: $('batch-revenue'), batchMargin: $('batch-margin'),
+    tags: $('tags'), tagTemplate: $('tag-template'),
+    batchLead: $('batch-lead'), bMat: $('b-mat'), bLab: $('b-lab'), bPack: $('b-pack'),
+    bCost: $('b-cost'), bRevenue: $('b-revenue'), bRevenueTtc: $('b-revenue-ttc'),
+    bMargin: $('b-margin'), bLoss: $('b-loss'), bCoef: $('b-coef'),
     alert: $('alert'), alertTitle: $('alert-title'), alertMessage: $('alert-message'),
     count: $('count'), empty: $('empty'), list: $('list'),
   };
 
-  const optionFor = (value) =>
-    document.querySelector(`#unit input[value="${value}"]`).closest('.seg-opt');
-
-  const currentUnit = () => document.querySelector('input[name="unit"]:checked').value;
   const currentProducedUnit = () => document.querySelector('input[name="produnit"]:checked').value;
   const currentMethod = () => document.querySelector('input[name="method"]:checked').value;
   const scopeOf = (name) =>
@@ -1181,82 +1245,74 @@
     });
   }
 
-  /* ---------- Ingrédients ---------- */
-
-  function addIngredient(prefill) {
-    const node = el.ingTemplate.content.firstElementChild.cloneNode(true);
-    const name = node.querySelector('.ing-name');
-    const qty = node.querySelector('.ing-q');
-    const unit = node.querySelector('.ing-u');
-    const price = node.querySelector('.ing-p');
-
-    if (prefill) {
-      name.value = prefill.name || '';
-      qty.value = prefill.qty || '';
-      unit.value = UNITS[prefill.unit] ? prefill.unit : 'kg';
-      price.value = prefill.price || '';
+  /** Ajoute une ligne clonée d'un <template>, câblée pour recalculer à la frappe. */
+  function addRow(template, list, selectors, prefill) {
+    const node = template.content.firstElementChild.cloneNode(true);
+    for (const [key, selector] of Object.entries(selectors)) {
+      const field = node.querySelector(selector);
+      if (prefill && prefill[key] !== undefined) field.value = prefill[key];
+      if (field.tagName === 'SELECT') field.addEventListener('change', render);
+      else if (field.classList.contains('text')) field.addEventListener('input', render);
+      else bindNumeric(field);
     }
-
-    bindNumeric(qty);
-    bindNumeric(price);
-    name.addEventListener('input', render);
-    unit.addEventListener('change', render);
-    node.querySelector('.ing-del').addEventListener('click', () => {
+    node.querySelector('.del').addEventListener('click', () => {
       node.remove();
-      // On garde toujours une ligne : une recette vide n'a pas de sens.
-      if (el.ingList.children.length === 0) addIngredient();
+      // On garde toujours une ligne : ni recette ni conditionnement vides.
+      if (list.children.length === 0) {
+        if (list === el.ingList) addIngredient(); else addFormat();
+      }
       render();
     });
-
-    el.ingList.append(node);
+    list.append(node);
     return node;
   }
 
-  /** Lit les lignes et ramène chaque quantité à son unité de facturation. */
+  const ING_FIELDS = { name: '.ing-name', qty: '.ing-q', unit: '.ing-u', price: '.ing-p' };
+  const FMT_FIELDS = { name: '.fmt-name', count: '.fmt-n', weightG: '.fmt-w', packaging: '.fmt-p', targetTTC: '.fmt-t' };
+
+  const addIngredient = (prefill) => addRow(el.ingTemplate, el.ingList, ING_FIELDS, prefill);
+  const addFormat = (prefill) => addRow(el.fmtTemplate, el.fmtList, FMT_FIELDS, prefill);
+
+  /** Lit les ingrédients et ramène chaque quantité à son unité de facturation. */
   function readIngredients() {
     return [...el.ingList.children].map((node) => {
       const unit = node.querySelector('.ing-u').value;
       const spec = UNITS[unit] || UNITS.kg;
-      const typed = parseNumber(node.querySelector('.ing-q').value);
-      const quantity = Math.max(typed, 0) * spec.factor;
+      const quantity = Math.max(parseNumber(node.querySelector('.ing-q').value), 0) * spec.factor;
       const price = Math.max(parseNumber(node.querySelector('.ing-p').value), 0);
       return { node, unit, ref: spec.ref, quantity, price, cost: quantity * price };
     });
   }
 
-  function saveableIngredients() {
-    return [...el.ingList.children].map((node) => ({
-      name: node.querySelector('.ing-name').value.trim(),
-      qty: node.querySelector('.ing-q').value,
-      unit: node.querySelector('.ing-u').value,
-      price: node.querySelector('.ing-p').value,
-    })).filter((line) => line.qty || line.price || line.name);
+  function readFormats() {
+    return [...el.fmtList.children].map((node, index) => ({
+      node,
+      name: node.querySelector('.fmt-name').value.trim() || `Format ${index + 1}`,
+      count: parseNumber(node.querySelector('.fmt-n').value),
+      weightG: parseNumber(node.querySelector('.fmt-w').value),
+      packaging: parseNumber(node.querySelector('.fmt-p').value),
+      targetTTC: parseNumber(node.querySelector('.fmt-t').value),
+    }));
   }
+
+  const fieldValues = (list, fields) => [...list.children].map((node) => {
+    const out = {};
+    for (const [key, selector] of Object.entries(fields)) out[key] = node.querySelector(selector).value;
+    return out;
+  });
 
   /* ---------- Rendu ---------- */
 
   function render() {
     const ingredients = readIngredients();
     const producedUnit = currentProducedUnit();
-    const producedQty = parseNumber(el.prod.value);
-
-    // L'unité de vente découle de ce qu'on produit : on ne vend pas au kilo
-    // une production comptée en pièces.
     const perPiece = producedUnit === 'piece';
-    optionFor('kg').hidden = perPiece;
-    optionFor('portion').hidden = perPiece;
-    el.optPiece.hidden = !perPiece;
-    if (perPiece && currentUnit() !== 'piece') {
-      document.querySelector('#unit input[value="piece"]').checked = true;
-    } else if (!perPiece && currentUnit() === 'piece') {
-      document.querySelector('#unit input[value="kg"]').checked = true;
-    }
-    const sellUnit = currentUnit();
+    const producedQty = parseNumber(el.prod.value);
+    const method = currentMethod();
 
     el.prodSuffix.textContent = perPiece ? 'pièce' : 'kg';
-    el.portionField.hidden = sellUnit !== 'portion';
 
-    // Coût par ligne, affiché en bout de ligne.
+    // Coût par ligne d'ingrédient.
     for (const line of ingredients) {
       line.node.querySelector('.ing-suffix').textContent = PRICE_SUFFIX[line.ref];
       line.node.querySelector('.ing-cost').textContent = '= ' + euro(line.cost);
@@ -1265,26 +1321,29 @@
       node.querySelector('.ing-del').hidden = el.ingList.children.length < 2;
     }
 
+    // En pièces, un format n'a pas de poids : une pièce est une pièce.
+    for (const node of el.fmtList.children) {
+      node.querySelector('.fmt-weight').hidden = perPiece;
+      node.querySelector('.fmt-target').hidden = method !== 'targetPrice';
+      node.querySelector('.fmt-del').hidden = el.fmtList.children.length < 2;
+    }
+    el.fmtHelp.hidden = perPiece;
+
     result = compute({
       ingredients,
       producedUnit,
       producedQty,
-      sellUnit,
-      portionWeightG: parseNumber(el.portion.value),
+      formats: readFormats(),
       labor: parseNumber(el.labor.value),
       laborScope: scopeOf('labor'),
-      packaging: parseNumber(el.pack.value),
-      packagingScope: scopeOf('pack'),
       vatRate: parseNumber(el.vat.value),
-      method: currentMethod(),
+      method,
       coefficient: parseNumber(el.coef.value),
       markRate: parseNumber(el.mark.value),
-      targetTTC: parseNumber(el.target.value),
       round: el.round.checked,
     });
 
     el.materialTotal.textContent = euro(result.materialCost);
-
     el.costLabel.textContent = perPiece ? 'Coût matière par pièce' : 'Prix de revient matière';
     el.costUnit.textContent = producedQty > 0
       ? euro(result.materialCost / producedQty) + (perPiece ? '/pièce' : '/kg')
@@ -1297,66 +1356,28 @@
         + ` obtenus pour ${formatDecimal(result.massBoughtKg, 2)} kg achetés.`;
     }
 
-    const portionG = parseNumber(el.portion.value);
-    if (result.salesUnits > 0) {
-      el.salesHint.textContent = sellUnit === 'portion'
-        ? `${formatDecimal(result.salesUnits, 1)} portions de ${grams(portionG)} dans ce lot.`
-        : `${formatDecimal(result.salesUnits, perPiece ? 0 : 2)} ${perPiece ? 'pièces' : 'kg'} à vendre.`;
-    } else {
-      el.salesHint.textContent =
-        'Renseigne la quantité produite pour connaître le nombre d\'unités vendables.';
+    // Coût de chaque format, et contrôle de la répartition.
+    for (const [index, node] of [...el.fmtList.children].entries()) {
+      const f = result.formats[index];
+      node.querySelector('.fmt-cost').textContent = f && f.totalHT > 0
+        ? `revient ${euro(f.totalHT)} l'unité · ${euro(f.priceTTC)} TTC`
+        : '—';
     }
+    renderFill(perPiece);
 
-    // L'étiquette.
-    el.ttcUnit.textContent = sellUnit === 'kg' ? '/kg' : sellUnit === 'piece' ? '/pièce' : '/portion';
-    const name = el.name.value.trim();
-    el.tagName.textContent = name || 'Prix de vente';
-    el.ttc.textContent = euro(result.priceTTC);
-    el.ht.textContent = euro(result.priceHT);
-    el.roundedNote.hidden = !result.rounded;
-    if (result.rounded) {
-      el.roundedNote.textContent = `arrondi depuis ${euro(result.theoreticalTTC)}`;
-    }
-
-    el.material.textContent = euro(result.materialPerUnit);
-    el.materialNote.hidden = sellUnit !== 'portion';
-    if (sellUnit === 'portion') {
-      el.materialNote.textContent = `pour ${grams(portionG)}`;
-    }
-    el.rLabor.textContent = euro(result.labor);
-    el.rPack.textContent = euro(result.packaging);
-    el.total.textContent = euro(result.totalHT);
-
-    el.margin.textContent = euro(result.margin);
-    el.margin.classList.toggle('loss', result.margin < 0);
-    el.loss.hidden = result.margin >= 0;
-    el.rate.textContent = percent(result.markRate);
-    el.coefficient.textContent = coef(result.coefficient);
-
-    // Le lot entier.
-    if (result.salesUnits > 0) {
-      el.batchLead.textContent = sellUnit === 'portion'
-        ? `${formatDecimal(result.salesUnits, 1)} portions de ${grams(portionG)}`
-          + ` dans ${formatDecimal(result.produced, 2)} kg`
-        : `${formatDecimal(result.produced, perPiece ? 0 : 2)} ${perPiece ? 'pièces produites' : 'kg produits'}`;
-    } else {
-      el.batchLead.textContent = 'Quantité produite non renseignée';
-    }
-    el.batchCost.textContent = euro(result.batchCost);
-    el.batchRevenue.textContent = euro(result.batchRevenueHT);
-    el.batchMargin.textContent = euro(result.batchMargin);
+    renderTags(perPiece);
+    renderBatch(perPiece);
 
     // Raccourcis de TVA : actifs quand la valeur correspond.
     for (const chip of document.querySelectorAll('.chip')) {
       chip.setAttribute('aria-pressed', String(chip.dataset.vat === el.vat.value));
     }
+    // Le champ de la méthode choisie, et lui seul. « Prix visé » se saisit
+    // format par format : son champ vit dans les lignes de conditionnement.
+    for (const name of ['coefficient', 'markRate']) $('f-' + name).hidden = name !== method;
+    $('f-targetPrice').hidden = method !== 'targetPrice';
 
-    // Le champ de la méthode choisie, et lui seul.
-    for (const method of ['coefficient', 'markRate', 'targetPrice']) {
-      $('f-' + method).hidden = method !== currentMethod();
-    }
-
-    const alert = buildAlert(result, sellUnit);
+    const alert = buildAlert(result);
     el.alert.className = 'badge' + (alert.tone ? ' ' + alert.tone : '');
     el.alertTitle.textContent = alert.title;
     el.alertMessage.textContent = alert.message;
@@ -1365,7 +1386,87 @@
     el.addHint.hidden = result.isComplete;
   }
 
-  const UNIT_LABEL = { kg: 'au kilo', portion: 'à la portion', piece: 'à la pièce' };
+  function renderFill(perPiece) {
+    const unit = perPiece ? 'pièces' : 'kg';
+    const fmt = (value) => perPiece ? formatDecimal(value, 0) : formatDecimal(value, 2);
+    if (result.produced <= 0) {
+      el.fillNote.className = 'fill-note';
+      el.fillNote.textContent = 'Renseigne la quantité produite pour répartir le lot.';
+      return;
+    }
+    const left = result.remaining;
+    if (Math.abs(left) < 0.0005) {
+      el.fillNote.className = 'fill-note';
+      el.fillNote.textContent = `${fmt(result.allocated)} ${unit} répartis sur `
+        + `${fmt(result.produced)} — tout le lot est conditionné.`;
+    } else if (left > 0) {
+      el.fillNote.className = 'fill-note';
+      el.fillNote.textContent = `${fmt(result.allocated)} ${unit} répartis sur `
+        + `${fmt(result.produced)} — il reste ${fmt(left)} ${unit} non conditionnés,`
+        + ` dont le coût pèse sur la marge du lot.`;
+    } else {
+      el.fillNote.className = 'fill-note over';
+      el.fillNote.textContent = `${fmt(result.allocated)} ${unit} conditionnés pour `
+        + `${fmt(result.produced)} produits : il en manque ${fmt(-left)} ${unit}.`;
+    }
+  }
+
+  function renderTags(perPiece) {
+    el.tags.replaceChildren();
+    const product = el.name.value.trim();
+
+    for (const f of result.formats) {
+      const node = el.tagTemplate.content.firstElementChild.cloneNode(true);
+      const set = (selector, value) => { node.querySelector(selector).textContent = value; };
+
+      const label = perPiece
+        ? f.name
+        : f.weightKg > 0 ? `${f.name} ${grams(f.weightKg * 1000)}` : f.name;
+      set('.t-name', product ? `${product} — ${label}` : label);
+      set('.t-unit', perPiece ? '/pièce' : `/${formatDecimal(f.weightKg * 1000, 0)} g`);
+      set('.t-ttc', euro(f.priceTTC));
+      set('.t-ht', euro(f.priceHT));
+
+      const rounded = node.querySelector('.t-round');
+      rounded.hidden = !f.rounded;
+      if (f.rounded) rounded.textContent = `arrondi depuis ${euro(f.theoreticalTTC)}`;
+
+      set('.t-mat', euro(f.material));
+      set('.t-lab', euro(f.labor));
+      set('.t-pack', euro(f.packaging));
+      set('.t-total', euro(f.totalHT));
+
+      const margin = node.querySelector('.t-margin');
+      margin.textContent = euro(f.margin);
+      margin.classList.toggle('loss', f.margin < 0);
+      node.querySelector('.t-loss').hidden = f.margin >= 0;
+
+      set('.t-rate', percent(f.markRate));
+      set('.t-coef', coef(f.coefficient));
+      set('.t-linek', `Marge sur ${formatDecimal(f.count, 0)} unité${f.count > 1 ? 's' : ''}`);
+      set('.t-line', euro(f.lineMargin));
+
+      el.tags.append(node);
+    }
+  }
+
+  function renderBatch(perPiece) {
+    const unit = perPiece ? 'pièces' : 'kg';
+    el.batchLead.textContent = result.produced > 0
+      ? `${formatDecimal(result.produced, perPiece ? 0 : 2)} ${unit} produits · `
+        + `${formatDecimal(result.totalUnits, 0)} unité${result.totalUnits > 1 ? 's' : ''} à vendre`
+      : 'Quantité produite non renseignée';
+    el.bMat.textContent = euro(result.produced > 0 ? result.materialCost : 0);
+    el.bLab.textContent = euro(result.produced > 0 ? result.laborBatch : 0);
+    el.bPack.textContent = euro(result.packagingTotal);
+    el.bCost.textContent = euro(result.batchCost);
+    el.bRevenue.textContent = euro(result.batchRevenueHT);
+    el.bRevenueTtc.textContent = euro(result.batchRevenueTTC);
+    el.bMargin.textContent = euro(result.batchMargin);
+    el.bMargin.classList.toggle('loss', result.batchMargin < 0);
+    el.bLoss.hidden = result.batchMargin >= 0;
+    el.bCoef.textContent = coef(result.batchCoefficient);
+  }
 
   function renderList() {
     el.count.textContent = String(products.length);
@@ -1378,7 +1479,6 @@
 
       const head = document.createElement('div');
       head.className = 'item-head';
-
       const who = document.createElement('div');
       who.className = 'who';
 
@@ -1389,13 +1489,12 @@
 
       const meta = document.createElement('p');
       meta.className = 'item-meta';
-      const base = UNIT_LABEL[product.unit] || UNIT_LABEL.kg;
-      const unitText = base + (product.unit === 'portion' && product.portionWeightG
-        ? ` · ${grams(product.portionWeightG)}`
-        : '');
-      meta.textContent = `${unitText}  ·  TVA `
+      const produced = product.producedUnit === 'piece'
+        ? `${formatDecimal(product.produced, 0)} pièces`
+        : `${formatDecimal(product.produced, 2)} kg`;
+      meta.textContent = `${produced} · ${product.formats.length} format`
+        + `${product.formats.length > 1 ? 's' : ''} · TVA `
         + percent(product.vatRate, product.vatRate % 1 === 0 ? 0 : 1);
-
       who.append(title, meta);
 
       const del = document.createElement('button');
@@ -1408,24 +1507,16 @@
         save();
         renderList();
       });
-
       head.append(who, del);
 
       const stats = document.createElement('div');
       stats.className = 'stats';
-      const cells = [
-        ['Revient HT', euro(product.totalHT), false],
-        ['PV TTC', euro(product.priceTTC), true],
-        ['Coefficient', coef(product.coefficient), false],
-        ['Taux de marque', percent(product.markRate), false],
-      ];
-      if (product.batchMargin) {
-        cells.push(['Marge du lot', euro(product.batchMargin), true]);
-        cells.push(['Produit', product.unit === 'piece'
-          ? `${formatDecimal(product.produced, 0)} pièces`
-          : `${formatDecimal(product.produced, 2)} kg`, false]);
-      }
-      for (const [label, value, accent] of cells) {
+      for (const [label, value, accent] of [
+        ['Coût du lot', euro(product.batchCost), false],
+        ['CA TTC', euro(product.batchRevenueTTC), true],
+        ['Marge du lot', euro(product.batchMargin), true],
+        ['Coefficient', coef(product.batchCoefficient), false],
+      ]) {
         const stat = document.createElement('div');
         stat.className = 'stat';
         const k = document.createElement('div');
@@ -1438,20 +1529,24 @@
         stats.append(stat);
       }
 
+      const prices = document.createElement('p');
+      prices.className = 'item-date';
+      prices.textContent = product.formats
+        .map((f) => `${f.label} : ${euro(f.priceTTC)}`)
+        .join('  ·  ');
+
       const date = document.createElement('p');
       date.className = 'item-date';
       date.textContent = formatDateTime(product.createdAt);
 
-      item.append(head, stats, date);
+      item.append(head, stats, prices, date);
       el.list.append(item);
     }
   }
 
   /* ---------- Événements ---------- */
 
-  for (const input of [el.prod, el.portion, el.labor, el.pack, el.vat, el.coef, el.mark, el.target]) {
-    bindNumeric(input);
-  }
+  for (const input of [el.prod, el.labor, el.vat, el.coef, el.mark]) bindNumeric(input);
 
   el.name.addEventListener('input', render);
   el.round.addEventListener('change', render);
@@ -1460,8 +1555,13 @@
     render();
     node.querySelector('.ing-name').focus();
   });
+  el.fmtAdd.addEventListener('click', () => {
+    const node = addFormat();
+    render();
+    node.querySelector('.fmt-name').focus();
+  });
 
-  for (const radio of document.querySelectorAll('input[name="unit"], input[name="method"], input[name="produnit"]')) {
+  for (const radio of document.querySelectorAll('input[name="method"], input[name="produnit"]')) {
     radio.addEventListener('change', render);
   }
 
@@ -1485,23 +1585,25 @@
 
   el.add.addEventListener('click', () => {
     if (!result || !result.isComplete) return;
-    const sellUnit = currentUnit();
+    const perPiece = currentProducedUnit() === 'piece';
     products.unshift({
       id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`,
       name: el.name.value.trim() || 'Sans nom',
-      unit: sellUnit,
-      portionWeightG: sellUnit === 'portion' ? parseNumber(el.portion.value) : null,
       produced: result.produced,
       producedUnit: currentProducedUnit(),
-      salesUnits: result.salesUnits,
-      totalHT: result.totalHT,
-      priceHT: result.priceHT,
-      priceTTC: result.priceTTC,
       vatRate: parseNumber(el.vat.value),
-      coefficient: result.coefficient,
-      markRate: result.markRate,
+      batchCost: result.batchCost,
+      batchRevenueTTC: result.batchRevenueTTC,
       batchMargin: result.batchMargin,
-      ingredients: saveableIngredients(),
+      batchCoefficient: result.batchCoefficient,
+      formats: result.formats.map((f) => ({
+        label: perPiece ? f.name : `${f.name} ${grams(f.weightKg * 1000)}`,
+        count: f.count,
+        priceTTC: f.priceTTC,
+        totalHT: f.totalHT,
+      })),
+      ingredients: fieldValues(el.ingList, ING_FIELDS),
+      formatFields: fieldValues(el.fmtList, FMT_FIELDS),
       createdAt: new Date().toISOString(),
     });
     save();
@@ -1509,6 +1611,7 @@
   });
 
   addIngredient();
+  addFormat({ name: 'Barquette', count: '', weightG: '250', packaging: '' });
   render();
   renderList();
 
