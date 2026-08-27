@@ -27,7 +27,12 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      // On ne supprime que nos propres anciens caches : le compteur de cigarettes a le sien,
+      // sur la même origine, et l'effacer lui ferait perdre son mode hors ligne.
+      .then((keys) => Promise.all(
+        keys.filter((k) => k.startsWith('marge-') && k !== CACHE)
+          .map((k) => caches.delete(k))
+      ))
       .then(() => self.clients.claim())
   );
 });
@@ -43,6 +48,11 @@ self.addEventListener('fetch', (event) => {
   // Navigation : on tente le réseau pour récupérer une nouvelle version,
   // et on retombe sur le cache si le téléphone est hors ligne.
   if (request.mode === 'navigate') {
+    // Seulement pour notre propre page : une sous-app installée plus tard sous
+    // marge/ ne doit pas venir s'enregistrer sous notre clé index.html.
+    const rest = url.pathname.slice(new URL('./', self.location).pathname.length);
+    if (rest !== '' && rest !== 'index.html') return;
+
     event.respondWith(
       fetch(request)
         .then((response) => {
