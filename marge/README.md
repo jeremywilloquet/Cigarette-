@@ -21,29 +21,63 @@ fonctionne hors connexion.
 
 ## Le calcul
 
-Le prix d'achat est **toujours saisi au kilo**. En mode portion, il est ramené au
-poids servi :
+Tout part de ce qui est **réellement produit**, pas de ce qui est acheté. Avec
+4 kg d'avocats on ne fait pas 4 kg de guacamole mais 3,2 : c'est sur 3,2 que la
+marge se calcule.
 
 ```
-PA matière   = prix d'achat au kg × (poids portion / 1000)
-PA HT total  = PA matière + main d'œuvre + emballage
+coût matière du lot = Σ (quantité × prix) de chaque ingrédient
+unités vendables    = quantité produite  (÷ poids de la portion, si on vend à la portion)
+coût matière / unité = coût matière du lot / unités vendables
+prix de revient HT   = coût matière + main d'œuvre + emballage, par unité vendue
 ```
+
+La main d'œuvre et l'emballage se saisissent **pour tout le lot** ou **par unité
+vendue**, au choix : 20 € de travail sur la production entière, mais 0,30 € de
+barquette à chaque portion.
+
+Les ingrédients se cumulent, chacun dans l'unité de sa facture — au kilo, au
+litre ou à la pièce. Une quantité en grammes ou en millilitres est ramenée toute
+seule au prix au kilo ou au litre.
+
+On vend **au kilo**, **à la portion** (d'un poids donné) ou **à la pièce**. Une
+production comptée en pièces ne se vend qu'à la pièce : l'app le force.
 
 Puis, selon la méthode choisie :
 
-| Méthode        | Formule                                  |
-| -------------- | ---------------------------------------- |
-| Coefficient    | `PV HT = PA HT total × coefficient`       |
-| Taux de marque | `PV HT = PA HT total / (1 − taux / 100)`  |
-| Prix visé      | `PV HT = PV TTC visé / (1 + TVA / 100)`   |
+| Méthode        | Formule                                       |
+| -------------- | --------------------------------------------- |
+| Coefficient    | `PV HT = prix de revient × coefficient`        |
+| Taux de marque | `PV HT = prix de revient / (1 − taux / 100)`   |
+| Prix visé      | `PV HT = PV TTC visé / (1 + TVA / 100)`        |
 
 L'**arrondi psychologique** monte le prix TTC à la finale `,90` supérieure
 (8,32 € → 8,90 € ; 8,95 € → 9,90 €). Quand il est actif, la marge, le taux de
 marque et le coefficient sont recalculés **sur le prix arrondi** : ce sont les
 chiffres du prix réellement affiché en boutique, pas ceux du prix théorique.
 
-Les cas limites ne cassent rien : champs vides, taux de marque à 100 % ou plus,
-portion de 0 g, TVA à 0 % — le prix retombe à `0,00 €` plutôt que sur une erreur.
+L'étiquette montre les deux échelles : le prix de revient et la marge **par
+unité vendue**, puis le coût, le chiffre d'affaires et la marge **sur toute la
+production**.
+
+Les cas limites ne cassent rien : champs vides, quantité produite à zéro, taux de
+marque à 100 % ou plus, portion de 0 g, TVA à 0 % — le prix retombe à `0,00 €`
+plutôt que sur une erreur. Sans quantité produite, aucun prix n'est affiché,
+même si l'emballage est déjà connu : il ignorerait la matière.
+
+### Un exemple
+
+| | |
+| --- | --- |
+| Avocats | 4 kg à 9,50 €/kg = 38,00 € |
+| Citrons verts | 6 pièces à 0,40 € = 2,40 € |
+| Coriandre | 60 g à 18,00 €/kg = 1,08 € |
+| **Coût matière** | **41,48 €** |
+| Production | 3,2 kg — rendement 80 % |
+| En barquettes de 250 g | 12,8 barquettes |
+| Prix de revient | 5,10 € la barquette |
+| Au coefficient ×2,5 | **13,46 € TTC** |
+| Marge sur la production | **97,98 €** |
 
 ## Les alertes
 
@@ -57,10 +91,12 @@ portion de 0 g, TVA à 0 % — le prix retombe à `0,00 €` plutôt que sur une
 ## Où sont les données
 
 Dans le `localStorage` du navigateur, sous la clé `botti.marge.v1` : un tableau
-de produits, le plus récent en premier.
+de produits, le plus récent en premier, recette comprise.
 
 ```json
-[{ "name": "Fraises gariguette", "unit": "kg", "priceTTC": 8.9, "coefficient": 2.56 }]
+[{ "name": "Guacamole maison", "unit": "portion", "portionWeightG": 250,
+   "produced": 3.2, "priceTTC": 13.46, "batchMargin": 97.98,
+   "ingredients": [{ "name": "Avocats", "qty": "4", "unit": "kg", "price": "9,50" }] }]
 ```
 
 Rien ne sort du téléphone. En contrepartie : effacer les données de navigation

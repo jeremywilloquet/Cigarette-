@@ -240,6 +240,117 @@
     color: var(--ink-soft);
   }
 
+  /* ---------- Lignes d'ingrédients ---------- */
+
+  .ing {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--paper);
+  }
+  .ing-top { display: flex; align-items: center; gap: 8px; }
+  .ing-top .control { flex: 1; min-height: 42px; }
+  /* Quantité et unité côte à côte, prix sur toute la largeur en dessous.
+     À trois de front sur un écran de 320 px, le champ prix tombait à zéro
+     pixel dès que le suffixe s'allongeait (« €/pièce ») : inutilisable. */
+  .ing-grid {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px;
+  }
+  .ing-grid .control { min-height: 46px; padding: 0 10px; }
+  .ing-grid .control input { font-size: 16px; }
+  .ing-qty { grid-column: 1; min-width: 0; }
+  .unit-pick { grid-column: 2; }
+  .ing-price { grid-column: 1 / -1; min-width: 0; }
+
+  .unit-pick {
+    flex: none;
+    display: flex;
+    align-items: center;
+    min-height: 46px;
+    padding: 0 4px 0 10px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--paper-2);
+  }
+  .unit-pick select {
+    border: 0;
+    background: none;
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--ink);
+    padding: 10px 4px;
+  }
+  .unit-pick select:focus { outline: none; }
+  .unit-pick:focus-within { border-color: var(--ocre); }
+
+  .ing-cost {
+    margin: 0;
+    text-align: right;
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  .ing-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .add-line {
+    min-height: 44px;
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--green-deep);
+  }
+  .add-line:active { background: var(--paper); }
+
+  .sum {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 4px;
+  }
+  .sum .k { font-weight: 500; font-size: 13px; color: var(--ink-soft); }
+  .sum .v { font-family: var(--mono); font-weight: 600; font-size: 17px; color: var(--green-deep); }
+
+  /* Petite bascule « au total / par unité » sous un champ. */
+  .scope { display: flex; gap: 6px; }
+  .scope button {
+    flex: 1;
+    min-height: 34px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--paper);
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .scope button[aria-pressed="true"] {
+    background: var(--green-deep);
+    border-color: var(--green-deep);
+    color: var(--paper);
+    font-weight: 600;
+  }
+
+  /* ---------- Bloc « sur la production », dans l'étiquette ---------- */
+
+  .batch { margin-top: 4px; }
+  .batch h3 {
+    margin: 0 0 2px;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--on-green-faint);
+  }
+  .batch .lead { margin: 0 0 8px; font-family: var(--mono); font-size: 12px; color: var(--on-green-soft); }
+
   /* Raccourcis de TVA */
   .chips { display: flex; gap: 8px; margin-top: 2px; }
   .chip {
@@ -524,46 +635,112 @@
     <p class="tagline">Calculateur de marge · Marché Couvert des Halles, Chambéry</p>
   </header>
 
-  <section class="card">
-    <h2><span class="step" aria-hidden="true">1</span> Unité de vente</h2>
-    <div class="seg" id="unit">
-      <label class="seg-opt"><input type="radio" name="unit" value="kg" checked><span>Au kilo</span></label>
-      <label class="seg-opt"><input type="radio" name="unit" value="portion"><span>À la portion</span></label>
-    </div>
-    <div class="field" id="portion-field" hidden>
-      <span class="label" id="l-portion">Poids de la portion (g)</span>
-      <div class="control">
-        <input id="portion" inputmode="decimal" autocomplete="off" value="350" maxlength="6" aria-labelledby="l-portion">
-        <span class="suffix">g</span>
+  <template id="ing-template">
+    <div class="ing">
+      <div class="ing-top">
+        <div class="control">
+          <input class="text ing-name" type="text" autocomplete="off" maxlength="40"
+                 placeholder="Avocats, citron vert…" aria-label="Nom de l'ingrédient">
+        </div>
+        <button type="button" class="del ing-del" aria-label="Retirer cet ingrédient">✕</button>
       </div>
+      <div class="ing-grid">
+        <div class="control ing-qty">
+          <input class="ing-q" inputmode="decimal" autocomplete="off" placeholder="0" maxlength="10"
+                 aria-label="Quantité achetée">
+        </div>
+        <div class="unit-pick">
+          <select class="ing-u" aria-label="Unité">
+            <option value="kg">kg</option>
+            <option value="g">g</option>
+            <option value="L">L</option>
+            <option value="mL">mL</option>
+            <option value="piece">pièce</option>
+          </select>
+        </div>
+        <div class="control ing-price">
+          <input class="ing-p" inputmode="decimal" autocomplete="off" placeholder="0" maxlength="10"
+                 aria-label="Prix">
+          <span class="suffix ing-suffix">€/kg</span>
+        </div>
+      </div>
+      <p class="ing-cost">= 0,00 €</p>
+    </div>
+  </template>
+
+  <section class="card">
+    <h2><span class="step" aria-hidden="true">1</span> Ce que j'achète</h2>
+    <p class="hint">Une ligne par ingrédient. Le prix est celui de ta facture : au kilo, au litre ou à la pièce.</p>
+    <div class="ing-list" id="ing-list"></div>
+    <button type="button" class="add-line" id="ing-add">+ Ajouter un ingrédient</button>
+    <div class="sum">
+      <span class="k">Coût matière du lot</span>
+      <span class="v" id="material-total">0,00 €</span>
     </div>
   </section>
 
   <section class="card">
-    <h2><span class="step" aria-hidden="true">2</span> Prix d'achat et coûts</h2>
-
-    <div class="field">
-      <span class="label" id="l-buy">Prix d'achat HT net (€/kg)</span>
-      <div class="control">
-        <input id="buy" inputmode="decimal" autocomplete="off" placeholder="0" maxlength="12" aria-labelledby="l-buy">
-        <span class="suffix">€/kg</span>
-      </div>
-      <p class="hint" id="buy-hint" hidden></p>
+    <h2><span class="step" aria-hidden="true">2</span> Ce que je produis</h2>
+    <p class="hint">La quantité réellement obtenue à la fin. Avec 4 kg d'avocats tu ne fais pas 4 kg de guacamole : c'est cette quantité-là qui donne le vrai prix de revient.</p>
+    <div class="seg" id="prod-unit">
+      <label class="seg-opt"><input type="radio" name="produnit" value="kg" checked><span>En kilos</span></label>
+      <label class="seg-opt"><input type="radio" name="produnit" value="piece"><span>En pièces</span></label>
     </div>
+    <div class="field">
+      <span class="label" id="l-prod">Quantité produite</span>
+      <div class="control">
+        <input id="prod" inputmode="decimal" autocomplete="off" placeholder="0" maxlength="10" aria-labelledby="l-prod">
+        <span class="suffix" id="prod-suffix">kg</span>
+      </div>
+      <p class="hint" id="yield-hint" hidden></p>
+    </div>
+    <div class="sum">
+      <span class="k" id="cost-label">Prix de revient matière</span>
+      <span class="v" id="cost-unit">0,00 €</span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2><span class="step" aria-hidden="true">3</span> Unité de vente</h2>
+    <div class="seg" id="unit">
+      <label class="seg-opt"><input type="radio" name="unit" value="kg" checked><span>Au kilo</span></label>
+      <label class="seg-opt"><input type="radio" name="unit" value="portion"><span>À la portion</span></label>
+      <label class="seg-opt" id="opt-piece" hidden><input type="radio" name="unit" value="piece"><span>À la pièce</span></label>
+    </div>
+    <div class="field" id="portion-field" hidden>
+      <span class="label" id="l-portion">Poids de la portion (g)</span>
+      <div class="control">
+        <input id="portion" inputmode="decimal" autocomplete="off" value="250" maxlength="6" aria-labelledby="l-portion">
+        <span class="suffix">g</span>
+      </div>
+    </div>
+    <p class="hint" id="sales-hint">Renseigne la quantité produite pour connaître le nombre d'unités vendables.</p>
+  </section>
+
+  <section class="card">
+    <h2><span class="step" aria-hidden="true">4</span> Main d'œuvre, emballage et TVA</h2>
 
     <div class="field">
-      <span class="label" id="l-labor">Main d'œuvre (<span class="per">€ / kg</span>)</span>
+      <span class="label" id="l-labor">Main d'œuvre</span>
       <div class="control">
         <input id="labor" inputmode="decimal" autocomplete="off" placeholder="0" maxlength="12" aria-labelledby="l-labor">
-        <span class="suffix per">€ / kg</span>
+        <span class="suffix">€</span>
+      </div>
+      <div class="scope" data-for="labor">
+        <button type="button" data-scope="total" aria-pressed="true">pour tout le lot</button>
+        <button type="button" data-scope="unit" aria-pressed="false">par unité vendue</button>
       </div>
     </div>
 
     <div class="field">
-      <span class="label" id="l-pack">Emballage / contenant (<span class="per">€ / kg</span>)</span>
+      <span class="label" id="l-pack">Emballage / contenant</span>
       <div class="control">
         <input id="pack" inputmode="decimal" autocomplete="off" placeholder="0" maxlength="12" aria-labelledby="l-pack">
-        <span class="suffix per">€ / kg</span>
+        <span class="suffix">€</span>
+      </div>
+      <div class="scope" data-for="pack">
+        <button type="button" data-scope="total" aria-pressed="false">pour tout le lot</button>
+        <button type="button" data-scope="unit" aria-pressed="true">par unité vendue</button>
       </div>
     </div>
 
@@ -581,7 +758,7 @@
   </section>
 
   <section class="card">
-    <h2><span class="step" aria-hidden="true">3</span> Méthode de calcul</h2>
+    <h2><span class="step" aria-hidden="true">5</span> Méthode de calcul</h2>
     <div class="seg" id="method">
       <label class="seg-opt"><input type="radio" name="method" value="coefficient" checked><span>Coefficient</span></label>
       <label class="seg-opt"><input type="radio" name="method" value="markRate"><span>Taux de marque</span></label>
@@ -617,7 +794,7 @@
   </section>
 
   <section class="card">
-    <h2><span class="step" aria-hidden="true">4</span> Arrondi psychologique</h2>
+    <h2><span class="step" aria-hidden="true">6</span> Arrondi psychologique</h2>
     <div class="switch-row">
       <p>Arrondit le prix TTC à la finale ,90 supérieure (8,32 € → 8,90 €). Marge, taux de marque et coefficient sont alors calculés sur le prix arrondi.</p>
       <label class="switch">
@@ -643,12 +820,12 @@
       <hr>
       <div class="rows">
         <div class="row">
-          <span class="k">Prix d'achat matière (HT)<span class="note" id="material-note" hidden></span></span>
+          <span class="k">Coût matière (HT)<span class="note" id="material-note" hidden></span></span>
           <span class="v" id="material">0,00 €</span>
         </div>
         <div class="row"><span class="k">+ Main d'œuvre</span><span class="v" id="r-labor">0,00 €</span></div>
         <div class="row"><span class="k">+ Emballage / contenant</span><span class="v" id="r-pack">0,00 €</span></div>
-        <div class="row strong"><span class="k">= Prix d'achat HT total</span><span class="v" id="total">0,00 €</span></div>
+        <div class="row strong"><span class="k">= Prix de revient HT</span><span class="v" id="total">0,00 €</span></div>
       </div>
       <hr>
       <div class="rows">
@@ -658,6 +835,16 @@
         </div>
         <div class="row"><span class="k">Taux de marque réel</span><span class="v" id="rate">0,0 %</span></div>
         <div class="row"><span class="k">Coefficient réel</span><span class="v" id="coefficient">×0,00</span></div>
+      </div>
+      <hr>
+      <div class="batch">
+        <h3>Sur la production</h3>
+        <p class="lead" id="batch-lead">—</p>
+        <div class="rows">
+          <div class="row"><span class="k">Coût de revient total</span><span class="v" id="batch-cost">0,00 €</span></div>
+          <div class="row"><span class="k">Chiffre d'affaires HT</span><span class="v" id="batch-revenue">0,00 €</span></div>
+          <div class="row strong"><span class="k">Marge sur la production</span><span class="v" id="batch-margin">0,00 €</span></div>
+        </div>
       </div>
     </article>
   </div>
@@ -767,14 +954,56 @@
     return target / 100;
   }
 
-  function compute(input) {
-    // En mode portion, le prix d'achat saisi au kilo est ramené au poids servi.
-    const weightFactor = input.unit === 'kg' ? 1 : Math.max(input.portionWeightG, 0) / 1000;
+  /** Ramène une quantité à son unité de facturation : kg, L ou pièce. */
+  const UNITS = {
+    kg: { ref: 'kg', factor: 1 },
+    g: { ref: 'kg', factor: 0.001 },
+    L: { ref: 'L', factor: 1 },
+    mL: { ref: 'L', factor: 0.001 },
+    piece: { ref: 'piece', factor: 1 },
+  };
 
-    const materialCost = Math.max(input.buyPerKg, 0) * weightFactor;
-    const labor = Math.max(input.labor, 0);
-    const packaging = Math.max(input.packaging, 0);
-    const totalHT = materialCost + labor + packaging;
+  const PRICE_SUFFIX = { kg: '\u20AC/kg', L: '\u20AC/L', piece: '\u20AC/pi\u00E8ce' };
+
+  /**
+   * Tout part du lot produit, pas de la matière achetée : c'est la quantité
+   * réellement obtenue qui donne le prix de revient. Avec 4 kg d'avocats on
+   * fait 3,2 kg de guacamole, et c'est sur 3,2 kg que la marge se calcule.
+   */
+  function compute(input) {
+    let materialCost = 0;
+    let massBoughtKg = 0;
+    for (const line of input.ingredients) {
+      materialCost += line.cost;
+      if (line.ref === 'kg') massBoughtKg += line.quantity;
+    }
+
+    const produced = Math.max(input.producedQty, 0);
+    const portionKg = Math.max(input.portionWeightG, 0) / 1000;
+
+    // Nombre d'unités vendables dans le lot. Une portion de 0 g ou une
+    // production de 0 en donne zéro : tous les ratios retombent alors à 0.
+    let salesUnits = 0;
+    if (input.sellUnit === 'portion') {
+      if (portionKg > EPSILON) salesUnits = produced / portionKg;
+    } else {
+      salesUnits = produced;
+    }
+
+    const usable = salesUnits > EPSILON;
+
+    // Coût matière par unité vendue = coût du lot / nombre d'unités vendables.
+    const materialPerUnit = usable ? materialCost / salesUnits : 0;
+    const spread = (amount, scope) => {
+      // Sans quantité produite, même un coût déjà connu par unité (l'emballage)
+      // ne doit rien afficher : le prix qui en sortirait ignorerait la matière.
+      if (!usable) return 0;
+      const value = Math.max(amount, 0);
+      return scope === 'unit' ? value : value / salesUnits;
+    };
+    const labor = spread(input.labor, input.laborScope);
+    const packaging = spread(input.packaging, input.packagingScope);
+    const totalHT = materialPerUnit + labor + packaging;
 
     // Toujours >= 1 : jamais de division par zéro sur la TVA.
     const vatFactor = 1 + Math.max(input.vatRate, 0) / 100;
@@ -800,13 +1029,22 @@
     const margin = priceHT - totalHT;
 
     return {
-      materialCost, labor, packaging, totalHT,
+      materialCost, massBoughtKg, produced, salesUnits,
+      materialPerUnit, labor, packaging, totalHT,
       priceHT, priceTTC, theoreticalTTC,
       rounded: input.round && Math.round(priceTTC * 100) !== Math.round(theoreticalTTC * 100),
       margin,
       markRate: priceHT > EPSILON ? (margin / priceHT) * 100 : 0,
       coefficient: totalHT > EPSILON ? priceHT / totalHT : 0,
-      isComplete: totalHT > EPSILON && priceTTC > EPSILON,
+      // Rendement : ce qui sort rapporté à ce qui est entré, en poids.
+      yieldRate:
+        input.producedUnit === 'kg' && massBoughtKg > EPSILON
+          ? (produced / massBoughtKg) * 100
+          : null,
+      batchCost: totalHT * salesUnits,
+      batchRevenueHT: priceHT * salesUnits,
+      batchMargin: margin * salesUnits,
+      isComplete: usable && totalHT > EPSILON && priceTTC > EPSILON,
     };
   }
 
@@ -865,11 +1103,17 @@
       return [];
     }
     if (!Array.isArray(raw)) return [];
+    const UNIT_VALUES = ['kg', 'portion', 'piece'];
     return raw.filter((entry) => entry && typeof entry === 'object').map((entry, index) => ({
       id: typeof entry.id === 'string' && entry.id ? entry.id : `legacy-${index}`,
       name: typeof entry.name === 'string' ? entry.name : 'Sans nom',
-      unit: entry.unit === 'portion' ? 'portion' : 'kg',
+      unit: UNIT_VALUES.includes(entry.unit) ? entry.unit : 'kg',
       portionWeightG: Number.isFinite(entry.portionWeightG) ? entry.portionWeightG : null,
+      produced: Number(entry.produced) || 0,
+      producedUnit: entry.producedUnit === 'piece' ? 'piece' : 'kg',
+      salesUnits: Number(entry.salesUnits) || 0,
+      batchMargin: Number(entry.batchMargin) || 0,
+      ingredients: Array.isArray(entry.ingredients) ? entry.ingredients : [],
       totalHT: Number(entry.totalHT) || 0,
       priceHT: Number(entry.priceHT) || 0,
       priceTTC: Number(entry.priceTTC) || 0,
@@ -891,8 +1135,13 @@
   /* ---------- Éléments ---------- */
 
   const el = {
+    ingList: $('ing-list'), ingAdd: $('ing-add'), ingTemplate: $('ing-template'),
+    materialTotal: $('material-total'),
+    prod: $('prod'), prodSuffix: $('prod-suffix'),
+    yieldHint: $('yield-hint'), costLabel: $('cost-label'), costUnit: $('cost-unit'),
     portionField: $('portion-field'), portion: $('portion'),
-    buy: $('buy'), buyHint: $('buy-hint'), labor: $('labor'), pack: $('pack'), vat: $('vat'),
+    optPiece: $('opt-piece'), salesHint: $('sales-hint'),
+    labor: $('labor'), pack: $('pack'), vat: $('vat'),
     coef: $('coef'), mark: $('mark'), target: $('target'), round: $('round'),
     name: $('name'), add: $('add'), addHint: $('add-hint'),
     tagName: $('tag-name'), ttc: $('ttc'), ttcUnit: $('ttc-unit'), ht: $('ht'),
@@ -900,60 +1149,166 @@
     material: $('material'), materialNote: $('material-note'),
     rLabor: $('r-labor'), rPack: $('r-pack'), total: $('total'),
     margin: $('margin'), loss: $('loss'), rate: $('rate'), coefficient: $('coefficient'),
+    batchLead: $('batch-lead'), batchCost: $('batch-cost'),
+    batchRevenue: $('batch-revenue'), batchMargin: $('batch-margin'),
     alert: $('alert'), alertTitle: $('alert-title'), alertMessage: $('alert-message'),
     count: $('count'), empty: $('empty'), list: $('list'),
   };
 
-  const numericInputs = [el.portion, el.buy, el.labor, el.pack, el.vat, el.coef, el.mark, el.target];
+  const optionFor = (value) =>
+    document.querySelector(`#unit input[value="${value}"]`).closest('.seg-opt');
 
   const currentUnit = () => document.querySelector('input[name="unit"]:checked').value;
+  const currentProducedUnit = () => document.querySelector('input[name="produnit"]:checked').value;
   const currentMethod = () => document.querySelector('input[name="method"]:checked').value;
+  const scopeOf = (name) =>
+    document.querySelector(`.scope[data-for="${name}"] button[aria-pressed="true"]`).dataset.scope;
 
   let result = null;
+
+  /* ---------- Saisie numérique ---------- */
+
+  function bindNumeric(input) {
+    input.addEventListener('input', () => {
+      const clean = sanitize(input.value);
+      if (clean !== input.value) {
+        // On replace le curseur là où il était, sinon il saute à la fin.
+        const caret = Math.max(0, (input.selectionStart || 0) - (input.value.length - clean.length));
+        input.value = clean;
+        try { input.setSelectionRange(caret, caret); } catch (_) { /* champ sans sélection */ }
+      }
+      render();
+    });
+  }
+
+  /* ---------- Ingrédients ---------- */
+
+  function addIngredient(prefill) {
+    const node = el.ingTemplate.content.firstElementChild.cloneNode(true);
+    const name = node.querySelector('.ing-name');
+    const qty = node.querySelector('.ing-q');
+    const unit = node.querySelector('.ing-u');
+    const price = node.querySelector('.ing-p');
+
+    if (prefill) {
+      name.value = prefill.name || '';
+      qty.value = prefill.qty || '';
+      unit.value = UNITS[prefill.unit] ? prefill.unit : 'kg';
+      price.value = prefill.price || '';
+    }
+
+    bindNumeric(qty);
+    bindNumeric(price);
+    name.addEventListener('input', render);
+    unit.addEventListener('change', render);
+    node.querySelector('.ing-del').addEventListener('click', () => {
+      node.remove();
+      // On garde toujours une ligne : une recette vide n'a pas de sens.
+      if (el.ingList.children.length === 0) addIngredient();
+      render();
+    });
+
+    el.ingList.append(node);
+    return node;
+  }
+
+  /** Lit les lignes et ramène chaque quantité à son unité de facturation. */
+  function readIngredients() {
+    return [...el.ingList.children].map((node) => {
+      const unit = node.querySelector('.ing-u').value;
+      const spec = UNITS[unit] || UNITS.kg;
+      const typed = parseNumber(node.querySelector('.ing-q').value);
+      const quantity = Math.max(typed, 0) * spec.factor;
+      const price = Math.max(parseNumber(node.querySelector('.ing-p').value), 0);
+      return { node, unit, ref: spec.ref, quantity, price, cost: quantity * price };
+    });
+  }
+
+  function saveableIngredients() {
+    return [...el.ingList.children].map((node) => ({
+      name: node.querySelector('.ing-name').value.trim(),
+      qty: node.querySelector('.ing-q').value,
+      unit: node.querySelector('.ing-u').value,
+      price: node.querySelector('.ing-p').value,
+    })).filter((line) => line.qty || line.price || line.name);
+  }
 
   /* ---------- Rendu ---------- */
 
   function render() {
-    const unit = currentUnit();
-    const method = currentMethod();
-    const portionWeightG = parseNumber(el.portion.value);
-    const buyPerKg = parseNumber(el.buy.value);
+    const ingredients = readIngredients();
+    const producedUnit = currentProducedUnit();
+    const producedQty = parseNumber(el.prod.value);
+
+    // L'unité de vente découle de ce qu'on produit : on ne vend pas au kilo
+    // une production comptée en pièces.
+    const perPiece = producedUnit === 'piece';
+    optionFor('kg').hidden = perPiece;
+    optionFor('portion').hidden = perPiece;
+    el.optPiece.hidden = !perPiece;
+    if (perPiece && currentUnit() !== 'piece') {
+      document.querySelector('#unit input[value="piece"]').checked = true;
+    } else if (!perPiece && currentUnit() === 'piece') {
+      document.querySelector('#unit input[value="kg"]').checked = true;
+    }
+    const sellUnit = currentUnit();
+
+    el.prodSuffix.textContent = perPiece ? 'pièce' : 'kg';
+    el.portionField.hidden = sellUnit !== 'portion';
+
+    // Coût par ligne, affiché en bout de ligne.
+    for (const line of ingredients) {
+      line.node.querySelector('.ing-suffix').textContent = PRICE_SUFFIX[line.ref];
+      line.node.querySelector('.ing-cost').textContent = '= ' + euro(line.cost);
+    }
+    for (const node of el.ingList.children) {
+      node.querySelector('.ing-del').hidden = el.ingList.children.length < 2;
+    }
 
     result = compute({
-      unit, portionWeightG, buyPerKg,
+      ingredients,
+      producedUnit,
+      producedQty,
+      sellUnit,
+      portionWeightG: parseNumber(el.portion.value),
       labor: parseNumber(el.labor.value),
+      laborScope: scopeOf('labor'),
       packaging: parseNumber(el.pack.value),
+      packagingScope: scopeOf('pack'),
       vatRate: parseNumber(el.vat.value),
-      method,
+      method: currentMethod(),
       coefficient: parseNumber(el.coef.value),
       markRate: parseNumber(el.mark.value),
       targetTTC: parseNumber(el.target.value),
       round: el.round.checked,
     });
 
-    // Unités qui suivent le mode de vente.
-    const per = unit === 'kg' ? '€ / kg' : '€ / portion';
-    for (const node of document.querySelectorAll('.per')) node.textContent = per;
-    el.portionField.hidden = unit !== 'portion';
-    el.ttcUnit.textContent = unit === 'kg' ? '/kg' : '/portion';
+    el.materialTotal.textContent = euro(result.materialCost);
 
-    el.buyHint.hidden = unit !== 'portion';
-    if (unit === 'portion') {
-      el.buyHint.textContent =
-        `Toujours saisi au kilo — soit ${euro(result.materialCost)} pour ${grams(portionWeightG)}.`;
+    el.costLabel.textContent = perPiece ? 'Coût matière par pièce' : 'Prix de revient matière';
+    el.costUnit.textContent = producedQty > 0
+      ? euro(result.materialCost / producedQty) + (perPiece ? '/pièce' : '/kg')
+      : euro(0);
+
+    el.yieldHint.hidden = result.yieldRate === null;
+    if (result.yieldRate !== null) {
+      el.yieldHint.textContent =
+        `Rendement : ${formatDecimal(result.yieldRate, 0)} % — ${formatDecimal(result.produced, 2)} kg`
+        + ` obtenus pour ${formatDecimal(result.massBoughtKg, 2)} kg achetés.`;
     }
 
-    // Le champ de la méthode choisie, et lui seul.
-    for (const name of ['coefficient', 'markRate', 'targetPrice']) {
-      $('f-' + name).hidden = name !== method;
-    }
-
-    // Raccourcis de TVA : actifs quand la valeur correspond.
-    for (const chip of document.querySelectorAll('.chip')) {
-      chip.setAttribute('aria-pressed', String(chip.dataset.vat === el.vat.value));
+    const portionG = parseNumber(el.portion.value);
+    if (result.salesUnits > 0) {
+      el.salesHint.textContent = sellUnit === 'portion'
+        ? `${formatDecimal(result.salesUnits, 1)} portions de ${grams(portionG)} dans ce lot.`
+        : `${formatDecimal(result.salesUnits, perPiece ? 0 : 2)} ${perPiece ? 'pièces' : 'kg'} à vendre.`;
+    } else {
+      el.salesHint.textContent =
+        'Renseigne la quantité produite pour connaître le nombre d\'unités vendables.';
     }
 
     // L'étiquette.
+    el.ttcUnit.textContent = sellUnit === 'kg' ? '/kg' : sellUnit === 'piece' ? '/pièce' : '/portion';
     const name = el.name.value.trim();
     el.tagName.textContent = name || 'Prix de vente';
     el.ttc.textContent = euro(result.priceTTC);
@@ -963,10 +1318,10 @@
       el.roundedNote.textContent = `arrondi depuis ${euro(result.theoreticalTTC)}`;
     }
 
-    el.material.textContent = euro(result.materialCost);
-    el.materialNote.hidden = unit !== 'portion';
-    if (unit === 'portion') {
-      el.materialNote.textContent = `${grams(portionWeightG)} à ${euro(buyPerKg)}/kg`;
+    el.material.textContent = euro(result.materialPerUnit);
+    el.materialNote.hidden = sellUnit !== 'portion';
+    if (sellUnit === 'portion') {
+      el.materialNote.textContent = `pour ${grams(portionG)}`;
     }
     el.rLabor.textContent = euro(result.labor);
     el.rPack.textContent = euro(result.packaging);
@@ -978,8 +1333,30 @@
     el.rate.textContent = percent(result.markRate);
     el.coefficient.textContent = coef(result.coefficient);
 
-    // L'alerte.
-    const alert = buildAlert(result, unit);
+    // Le lot entier.
+    if (result.salesUnits > 0) {
+      el.batchLead.textContent = sellUnit === 'portion'
+        ? `${formatDecimal(result.salesUnits, 1)} portions de ${grams(portionG)}`
+          + ` dans ${formatDecimal(result.produced, 2)} kg`
+        : `${formatDecimal(result.produced, perPiece ? 0 : 2)} ${perPiece ? 'pièces produites' : 'kg produits'}`;
+    } else {
+      el.batchLead.textContent = 'Quantité produite non renseignée';
+    }
+    el.batchCost.textContent = euro(result.batchCost);
+    el.batchRevenue.textContent = euro(result.batchRevenueHT);
+    el.batchMargin.textContent = euro(result.batchMargin);
+
+    // Raccourcis de TVA : actifs quand la valeur correspond.
+    for (const chip of document.querySelectorAll('.chip')) {
+      chip.setAttribute('aria-pressed', String(chip.dataset.vat === el.vat.value));
+    }
+
+    // Le champ de la méthode choisie, et lui seul.
+    for (const method of ['coefficient', 'markRate', 'targetPrice']) {
+      $('f-' + method).hidden = method !== currentMethod();
+    }
+
+    const alert = buildAlert(result, sellUnit);
     el.alert.className = 'badge' + (alert.tone ? ' ' + alert.tone : '');
     el.alertTitle.textContent = alert.title;
     el.alertMessage.textContent = alert.message;
@@ -987,6 +1364,8 @@
     el.add.disabled = !result.isComplete;
     el.addHint.hidden = result.isComplete;
   }
+
+  const UNIT_LABEL = { kg: 'au kilo', portion: 'à la portion', piece: 'à la pièce' };
 
   function renderList() {
     el.count.textContent = String(products.length);
@@ -1010,10 +1389,12 @@
 
       const meta = document.createElement('p');
       meta.className = 'item-meta';
-      const unitText = product.unit === 'kg'
-        ? 'au kilo'
-        : 'à la portion' + (product.portionWeightG ? ` · ${grams(product.portionWeightG)}` : '');
-      meta.textContent = `${unitText}  ·  TVA ${percent(product.vatRate, product.vatRate % 1 === 0 ? 0 : 1)}`;
+      const base = UNIT_LABEL[product.unit] || UNIT_LABEL.kg;
+      const unitText = base + (product.unit === 'portion' && product.portionWeightG
+        ? ` · ${grams(product.portionWeightG)}`
+        : '');
+      meta.textContent = `${unitText}  ·  TVA `
+        + percent(product.vatRate, product.vatRate % 1 === 0 ? 0 : 1);
 
       who.append(title, meta);
 
@@ -1033,11 +1414,17 @@
       const stats = document.createElement('div');
       stats.className = 'stats';
       const cells = [
-        ['PA total HT', euro(product.totalHT), false],
+        ['Revient HT', euro(product.totalHT), false],
         ['PV TTC', euro(product.priceTTC), true],
         ['Coefficient', coef(product.coefficient), false],
         ['Taux de marque', percent(product.markRate), false],
       ];
+      if (product.batchMargin) {
+        cells.push(['Marge du lot', euro(product.batchMargin), true]);
+        cells.push(['Produit', product.unit === 'piece'
+          ? `${formatDecimal(product.produced, 0)} pièces`
+          : `${formatDecimal(product.produced, 2)} kg`, false]);
+      }
       for (const [label, value, accent] of cells) {
         const stat = document.createElement('div');
         stat.className = 'stat';
@@ -1062,22 +1449,19 @@
 
   /* ---------- Événements ---------- */
 
-  for (const input of numericInputs) {
-    input.addEventListener('input', () => {
-      const clean = sanitize(input.value);
-      if (clean !== input.value) {
-        // On replace le curseur là où il était, sinon il saute à la fin.
-        const caret = Math.max(0, (input.selectionStart || 0) - (input.value.length - clean.length));
-        input.value = clean;
-        try { input.setSelectionRange(caret, caret); } catch (_) { /* champ sans sélection */ }
-      }
-      render();
-    });
+  for (const input of [el.prod, el.portion, el.labor, el.pack, el.vat, el.coef, el.mark, el.target]) {
+    bindNumeric(input);
   }
 
   el.name.addEventListener('input', render);
   el.round.addEventListener('change', render);
-  for (const radio of document.querySelectorAll('input[name="unit"], input[name="method"]')) {
+  el.ingAdd.addEventListener('click', () => {
+    const node = addIngredient();
+    render();
+    node.querySelector('.ing-name').focus();
+  });
+
+  for (const radio of document.querySelectorAll('input[name="unit"], input[name="method"], input[name="produnit"]')) {
     radio.addEventListener('change', render);
   }
 
@@ -1088,26 +1472,43 @@
     });
   }
 
+  for (const group of document.querySelectorAll('.scope')) {
+    for (const button of group.querySelectorAll('button')) {
+      button.addEventListener('click', () => {
+        for (const other of group.querySelectorAll('button')) {
+          other.setAttribute('aria-pressed', String(other === button));
+        }
+        render();
+      });
+    }
+  }
+
   el.add.addEventListener('click', () => {
     if (!result || !result.isComplete) return;
-    const unit = currentUnit();
+    const sellUnit = currentUnit();
     products.unshift({
       id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`,
       name: el.name.value.trim() || 'Sans nom',
-      unit,
-      portionWeightG: unit === 'portion' ? parseNumber(el.portion.value) : null,
+      unit: sellUnit,
+      portionWeightG: sellUnit === 'portion' ? parseNumber(el.portion.value) : null,
+      produced: result.produced,
+      producedUnit: currentProducedUnit(),
+      salesUnits: result.salesUnits,
       totalHT: result.totalHT,
       priceHT: result.priceHT,
       priceTTC: result.priceTTC,
       vatRate: parseNumber(el.vat.value),
       coefficient: result.coefficient,
       markRate: result.markRate,
+      batchMargin: result.batchMargin,
+      ingredients: saveableIngredients(),
       createdAt: new Date().toISOString(),
     });
     save();
     renderList();
   });
 
+  addIngredient();
   render();
   renderList();
 
@@ -1116,6 +1517,7 @@
       navigator.serviceWorker.register('sw.js').catch(() => { /* hors ligne ou file:// */ });
     });
   }
+
 })();
 </script>
 </body>
