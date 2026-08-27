@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>BOTTI FRUIT — calculateur de marge</title>
+
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="description" content="Calculateur de marge pour le stand BOTTI FRUIT : prix d'achat, coûts, prix de vente et taux de marque.">
+<meta name="theme-color" content="#F3EFE2">
+
+<!-- Ajout à l'écran d'accueil iOS -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Marge">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png" sizes="192x192">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap">
+
+<style>
+  :root {
+    --green-deep: #1E3A2E;
+    --green-mid: #345C46;
+    --ocre: #C68E17;
+    --ocre-dark: #9C6E10;
+    --paper: #F3EFE2;
+    --paper-2: #EAE3D0;
+    --ink: #241F18;
+    --ink-soft: #5B5347;
+    --line: #D8CFB8;
+    --red: #A8412B;
+    --green-ok: #3A6B4A;
+
+    /* Le texte posé sur le vert profond : du papier plus ou moins voilé. */
+    --on-green: #F3EFE2;
+    --on-green-soft: rgba(243, 239, 226, .68);
+    --on-green-faint: rgba(243, 239, 226, .45);
+    --on-green-rule: rgba(243, 239, 226, .18);
+
+    --display: 'Fraunces', Georgia, 'Times New Roman', serif;
+    --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --body: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font: 400 16px/1.45 var(--body);
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
+  }
+
+  button, input {
+    font: inherit;
+    color: inherit;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  button {
+    border: 0;
+    background: none;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  :focus-visible { outline: 2px solid var(--ocre); outline-offset: 2px; }
+
+  .app {
+    max-width: 460px;
+    margin: 0 auto;
+    padding:
+      calc(env(safe-area-inset-top) + 22px)
+      calc(env(safe-area-inset-right) + 16px)
+      calc(env(safe-area-inset-bottom) + 40px)
+      calc(env(safe-area-inset-left) + 16px);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ---------- En-tête ---------- */
+
+  .brand {
+    margin: 0;
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 30px;
+    line-height: 1.1;
+    letter-spacing: .4px;
+    color: var(--green-deep);
+  }
+  .tagline {
+    margin: 4px 0 0;
+    font-size: 12.5px;
+    line-height: 1.35;
+    color: var(--ink-soft);
+  }
+
+  /* ---------- Cartes ---------- */
+
+  .card {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .card > h2 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 17px;
+    line-height: 1.2;
+  }
+
+  .step {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--green-deep);
+    color: var(--paper);
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 22px;
+    text-align: center;
+  }
+
+  /* ---------- Bascule segmentée ---------- */
+
+  .seg {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+  .seg-opt { flex: 1 1 0; display: flex; position: relative; }
+  .seg-opt input {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+  }
+  .seg-opt span {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 6px 4px;
+    border-radius: 9px;
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 1.2;
+    text-align: center;
+    color: var(--ink-soft);
+    transition: background-color .12s ease, color .12s ease;
+  }
+  .seg-opt input:checked + span {
+    background: var(--green-deep);
+    color: var(--paper);
+    font-weight: 600;
+  }
+  .seg-opt input:focus-visible + span { outline: 2px solid var(--ocre); outline-offset: 2px; }
+
+  /* ---------- Champs ---------- */
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+
+  .field > .label {
+    font-weight: 500;
+    font-size: 12.5px;
+    letter-spacing: .2px;
+    color: var(--ink-soft);
+  }
+
+  .control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 0 12px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+  }
+  .control:focus-within { border-color: var(--ocre); }
+
+  .control input {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 0;
+    border: 0;
+    background: none;
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: 17px;
+    -webkit-user-select: text;
+    user-select: text;
+  }
+  .control input:focus { outline: none; }
+  .control input::placeholder { color: var(--line); }
+  .control input.text {
+    font-family: var(--body);
+    font-weight: 500;
+    font-size: 16px;
+  }
+
+  .suffix {
+    flex: none;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  .hint {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.35;
+    color: var(--ink-soft);
+  }
+
+  /* Raccourcis de TVA */
+  .chips { display: flex; gap: 8px; margin-top: 2px; }
+  .chip {
+    padding: 7px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--paper);
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+  .chip[aria-pressed="true"] {
+    background: var(--green-deep);
+    border-color: var(--green-deep);
+    color: var(--paper);
+  }
+
+  /* ---------- Interrupteur ---------- */
+
+  .switch-row { display: flex; align-items: center; gap: 12px; }
+  .switch-row p { flex: 1; margin: 0; font-size: 13px; line-height: 1.45; color: var(--ink-soft); }
+
+  .switch { flex: none; position: relative; display: block; width: 52px; height: 32px; }
+  .switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; }
+  .switch .slider {
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    background: var(--line);
+    transition: background-color .15s ease;
+  }
+  .switch .slider::before {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--paper);
+    box-shadow: 0 1px 3px rgba(36, 31, 24, .3);
+    transition: transform .15s ease, background-color .15s ease;
+  }
+  .switch input:checked + .slider { background: var(--green-mid); }
+  .switch input:checked + .slider::before { transform: translateX(20px); background: var(--ocre); }
+  .switch input:focus-visible + .slider { outline: 2px solid var(--ocre); outline-offset: 2px; }
+
+  /* ---------- Étiquette de prix ---------- */
+
+  .tagwrap { position: relative; padding-top: 16px; }
+
+  /* La ficelle plonge derrière l'étiquette, vers l'œillet. */
+  .cord {
+    position: absolute;
+    top: 0;
+    left: 34px;
+    width: 2px;
+    height: 26px;
+    background: var(--line);
+    transform: rotate(16deg);
+  }
+
+  .tag {
+    position: relative;
+    background: var(--green-deep);
+    border-radius: 20px;
+    /* Le coin haut-gauche, plus ouvert, donne la silhouette de l'étiquette. */
+    border-top-left-radius: 36px;
+    padding: 18px 20px 20px;
+    color: var(--on-green);
+  }
+
+  .tag-head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .punch {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--paper);
+    border: 1px solid var(--green-mid);
+  }
+  .tag-name {
+    flex: 1;
+    min-width: 0;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 1.1px;
+    text-transform: uppercase;
+    color: var(--on-green-soft);
+    overflow-wrap: anywhere;
+  }
+
+  .price {
+    margin: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .price b {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(38px, 12.5vw, 52px);
+    line-height: 1.12;
+    color: var(--ocre);
+  }
+  .price .unit { font-weight: 600; font-size: 15px; color: var(--on-green-soft); }
+
+  .sub { margin: 2px 0 0; font-family: var(--mono); font-size: 13px; color: var(--on-green-soft); }
+  .rounded-note { margin: 2px 0 0; font-size: 12px; color: var(--on-green-faint); }
+
+  .tag hr { height: 1px; margin: 12px 0; border: 0; background: var(--on-green-rule); }
+
+  .rows { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+  .row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .row .k { font-size: 13px; line-height: 1.4; color: var(--on-green-soft); }
+  .row .v {
+    flex: none;
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--on-green);
+  }
+  .row.strong .k { font-weight: 600; color: var(--on-green); }
+  .row.strong .v { font-weight: 600; font-size: 15px; }
+  .row .note { display: block; font-family: var(--mono); font-size: 11px; color: var(--on-green-faint); }
+  .row .v.loss { color: var(--ocre); }
+
+  .loss-badge {
+    display: inline-block;
+    margin-top: 3px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--red);
+    color: var(--paper);
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: .4px;
+    text-transform: uppercase;
+  }
+
+  /* ---------- Badge d'alerte ---------- */
+
+  .badge {
+    display: flex;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--paper-2);
+    overflow: hidden;
+  }
+  .badge .accent { flex: none; width: 4px; background: var(--line); }
+  .badge .body { flex: 1; padding: 12px; }
+  .badge h3 { margin: 0 0 3px; font-weight: 600; font-size: 13px; color: var(--ink-soft); }
+  .badge p { margin: 0; font-size: 13px; line-height: 1.45; }
+
+  .badge.warn { border-color: var(--ocre); background: rgba(198, 142, 23, .14); }
+  .badge.warn .accent { background: var(--ocre); }
+  .badge.warn h3 { color: var(--ocre-dark); }
+
+  .badge.ok { border-color: var(--green-ok); background: rgba(58, 107, 74, .12); }
+  .badge.ok .accent { background: var(--green-ok); }
+  .badge.ok h3 { color: var(--green-ok); }
+
+  /* ---------- Bouton principal ---------- */
+
+  .primary {
+    min-height: 50px;
+    border-radius: 10px;
+    background: var(--ocre);
+    color: var(--paper);
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: .3px;
+  }
+  .primary:active { background: var(--ocre-dark); }
+  .primary:disabled { opacity: .45; cursor: default; }
+
+  /* ---------- Liste comparative ---------- */
+
+  .list-head { display: flex; align-items: center; gap: 8px; }
+  .list-head h2 {
+    flex: 1;
+    margin: 0;
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 19px;
+  }
+  .pill {
+    min-width: 26px;
+    padding: 3px 8px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--paper-2);
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 13px;
+    text-align: center;
+    color: var(--ink-soft);
+  }
+
+  .list { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+
+  .empty {
+    margin: 12px 0 0;
+    padding: 16px;
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--ink-soft);
+  }
+
+  .item {
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--paper);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .item-head { display: flex; align-items: flex-start; gap: 8px; }
+  .item-head .who { flex: 1; min-width: 0; }
+  .item-name {
+    margin: 0;
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+  .item-meta { margin: 2px 0 0; font-size: 11.5px; color: var(--ink-soft); }
+
+  .del {
+    flex: none;
+    width: 30px;
+    height: 30px;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    color: var(--red);
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 1;
+  }
+  .del:active { background: rgba(168, 65, 43, .12); border-color: var(--red); }
+
+  .stats { display: flex; flex-wrap: wrap; row-gap: 8px; }
+  .stat { width: 50%; padding-right: 8px; }
+  .stat .k {
+    font-weight: 500;
+    font-size: 10.5px;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .stat .v { font-family: var(--mono); font-weight: 600; font-size: 15px; }
+  .stat .v.accent { color: var(--green-deep); }
+
+  .item-date { margin: 0; font-size: 11px; color: var(--ink-soft); }
+
+  .footer {
+    margin: 0;
+    font-size: 11.5px;
+    line-height: 1.45;
+    text-align: center;
+    color: var(--ink-soft);
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <h1 class="brand">BOTTI FRUIT</h1>
+    <p class="tagline">Calculateur de marge · Marché Couvert des Halles, Chambéry</p>
+  </header>
+
+  <section class="card">
+    <h2><span class="step" aria-hidden="true">1</span> Unité de vente</h2>
+    <div class="seg" id="unit">
+      <label class="seg-opt"><input type="radio" name="unit" value="kg" checked><span>Au kilo</span></label>
+      <label class="seg-opt"><input type="radio" name="unit" value="portion"><span>À la portion</span></label>
+    </div>
+    <div class="field" id="portion-field" hidden>
+      <span class="label" id="l-portion">Poids de la portion (g)</span>
+      <div class="control">
+        <input id="portion" inputmode="decimal" autocomplete="off" value="350" maxlength="6" aria-labelledby="l-portion">
+        <span class="suffix">g</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2><span class="step" aria-hidden="true">2</span> Prix d'achat et coûts</h2>
+
+    <div class="field">
+      <span class="label" id="l-buy">Prix d'achat HT net (€/kg)</span>
+      <div class="control">
+        <input id="buy" inputmode="decimal" autocomplete="off" placeholder="0" maxlength="12" aria-labelledby="l-buy">
+        <span class="suffix">€/kg</span>
+      </div>
+      <p class="hint" id="buy-hint" hidden></p>
+    </div>
+
+    <div class="field">
+      <span class="label" id="l-labor">Main d'œuvre (<span class="per">€ / kg</span>)</span>
+      <div class="control">
+        <input id="labor" inputmode="decimal" autocomplete="off" placeholder="0" maxlength="12" aria-labelledby="l-labor">
+        <span class="suffix per">€ / kg</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="label" id="l-pack">Emballage / contenant (<span class="per">€ / kg</span>)</span>
+      <div class="control">
+        <input id="pack" inputmode="decimal" autocomplete="off" placeholder="0" maxlength="12" aria-labelledby="l-pack">
+        <span class="suffix per">€ / kg</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="label" id="l-vat">TVA (%)</span>
+      <div class="control">
+        <input id="vat" inputmode="decimal" autocomplete="off" value="5,5" maxlength="5" aria-labelledby="l-vat">
+        <span class="suffix">%</span>
+      </div>
+      <div class="chips">
+        <button type="button" class="chip" data-vat="5,5" aria-pressed="false">5,5 %</button>
+        <button type="button" class="chip" data-vat="20" aria-pressed="false">20 %</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2><span class="step" aria-hidden="true">3</span> Méthode de calcul</h2>
+    <div class="seg" id="method">
+      <label class="seg-opt"><input type="radio" name="method" value="coefficient" checked><span>Coefficient</span></label>
+      <label class="seg-opt"><input type="radio" name="method" value="markRate"><span>Taux de marque</span></label>
+      <label class="seg-opt"><input type="radio" name="method" value="targetPrice"><span>Prix visé</span></label>
+    </div>
+
+    <div class="field" id="f-coefficient">
+      <span class="label" id="l-coef">Coefficient multiplicateur</span>
+      <div class="control">
+        <input id="coef" inputmode="decimal" autocomplete="off" value="2,5" maxlength="8" aria-labelledby="l-coef">
+        <span class="suffix">×</span>
+      </div>
+      <p class="hint">Prix de vente HT = prix d'achat HT total × coefficient.</p>
+    </div>
+
+    <div class="field" id="f-markRate" hidden>
+      <span class="label" id="l-mark">Taux de marque visé (% du prix de vente HT)</span>
+      <div class="control">
+        <input id="mark" inputmode="decimal" autocomplete="off" value="60" maxlength="6" aria-labelledby="l-mark">
+        <span class="suffix">%</span>
+      </div>
+      <p class="hint">Un taux de 100 % ou plus n'a pas de solution : le prix reste à 0,00 €.</p>
+    </div>
+
+    <div class="field" id="f-targetPrice" hidden>
+      <span class="label" id="l-target">Prix de vente TTC visé (€)</span>
+      <div class="control">
+        <input id="target" inputmode="decimal" autocomplete="off" placeholder="0" maxlength="12" aria-labelledby="l-target">
+        <span class="suffix">€</span>
+      </div>
+      <p class="hint">Calcul inverse : le HT et la marge sont déduits du prix TTC affiché.</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2><span class="step" aria-hidden="true">4</span> Arrondi psychologique</h2>
+    <div class="switch-row">
+      <p>Arrondit le prix TTC à la finale ,90 supérieure (8,32 € → 8,90 €). Marge, taux de marque et coefficient sont alors calculés sur le prix arrondi.</p>
+      <label class="switch">
+        <input type="checkbox" id="round" aria-label="Arrondi psychologique">
+        <span class="slider"></span>
+      </label>
+    </div>
+  </section>
+
+  <div class="tagwrap">
+    <div class="cord" aria-hidden="true"></div>
+    <article class="tag" aria-live="polite">
+      <div class="tag-head">
+        <span class="punch" aria-hidden="true"></span>
+        <span class="tag-name" id="tag-name">Prix de vente</span>
+      </div>
+      <p class="price">
+        <b id="ttc">0,00 €</b>
+        <span class="unit" id="ttc-unit">/kg</span>
+      </p>
+      <p class="sub">soit <span id="ht">0,00 €</span> HT</p>
+      <p class="rounded-note" id="rounded-note" hidden></p>
+      <hr>
+      <div class="rows">
+        <div class="row">
+          <span class="k">Prix d'achat matière (HT)<span class="note" id="material-note" hidden></span></span>
+          <span class="v" id="material">0,00 €</span>
+        </div>
+        <div class="row"><span class="k">+ Main d'œuvre</span><span class="v" id="r-labor">0,00 €</span></div>
+        <div class="row"><span class="k">+ Emballage / contenant</span><span class="v" id="r-pack">0,00 €</span></div>
+        <div class="row strong"><span class="k">= Prix d'achat HT total</span><span class="v" id="total">0,00 €</span></div>
+      </div>
+      <hr>
+      <div class="rows">
+        <div class="row strong">
+          <span class="k">Marge brute HT<span class="loss-badge" id="loss" hidden>vente à perte</span></span>
+          <span class="v" id="margin">0,00 €</span>
+        </div>
+        <div class="row"><span class="k">Taux de marque réel</span><span class="v" id="rate">0,0 %</span></div>
+        <div class="row"><span class="k">Coefficient réel</span><span class="v" id="coefficient">×0,00</span></div>
+      </div>
+    </article>
+  </div>
+
+  <div class="badge" id="alert" role="status">
+    <span class="accent" aria-hidden="true"></span>
+    <div class="body">
+      <h3 id="alert-title">En attente de chiffres</h3>
+      <p id="alert-message">Renseigne le prix d'achat et la méthode de calcul : les indicateurs se mettent à jour à chaque frappe.</p>
+    </div>
+  </div>
+
+  <section class="card">
+    <h2>Ajouter à la liste</h2>
+    <div class="field">
+      <span class="label" id="l-name">Nom du produit</span>
+      <div class="control">
+        <input id="name" class="text" type="text" autocomplete="off" maxlength="60"
+               placeholder="Barquette de fraises, taboulé maison…" aria-labelledby="l-name">
+      </div>
+    </div>
+    <button type="button" class="primary" id="add" disabled>Ajouter</button>
+    <p class="hint" id="add-hint">Renseigne un prix d'achat et une méthode de calcul pour enregistrer le produit.</p>
+  </section>
+
+  <section>
+    <div class="list-head">
+      <h2>Mes produits</h2>
+      <span class="pill" id="count">0</span>
+    </div>
+    <p class="empty" id="empty">Aucun produit enregistré pour l'instant. Calcule un prix, nomme-le, puis touche « Ajouter » pour le comparer plus tard.</p>
+    <div class="list" id="list"></div>
+  </section>
+
+  <p class="footer">Tout est enregistré sur le téléphone : les produits sont retrouvés au prochain lancement, sans compte ni connexion.</p>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const STORE = 'botti.marge.v1';
+  const NBSP = '\u00A0'; // espace insécable
+  const EPSILON = 1e-9;
+
+  const $ = (id) => document.getElementById(id);
+
+  /* ---------- Nombres à la française ---------- */
+
+  /** Saisie utilisateur (« 2,5 », « 2.5 ») vers nombre. Jamais NaN. */
+  function parseNumber(raw) {
+    if (!raw) return 0;
+    const value = Number.parseFloat(String(raw).replace(/\s/g, '').replace(',', '.'));
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  /**
+   * Nettoie la frappe : chiffres et un seul séparateur décimal, normalisé en
+   * virgule. Le clavier iOS français envoie « , », l'anglais « . ».
+   */
+  function sanitize(raw) {
+    let out = '';
+    let hasSeparator = false;
+    for (const char of raw) {
+      if (char >= '0' && char <= '9') out += char;
+      else if ((char === ',' || char === '.') && !hasSeparator) { out += ','; hasSeparator = true; }
+    }
+    return out;
+  }
+
+  const group = (integer) => integer.replace(/\B(?=(\d{3})+(?!\d))/g, NBSP);
+
+  function formatDecimal(value, decimals = 2) {
+    const safe = Number.isFinite(value) ? value : 0;
+    // On arrondit avant de tester le signe pour ne pas afficher « -0,00 ».
+    const rounded = Number(safe.toFixed(decimals));
+    const sign = rounded < 0 ? '-' : '';
+    const [integer, fraction] = Math.abs(rounded).toFixed(decimals).split('.');
+    return sign + group(integer) + (fraction ? ',' + fraction : '');
+  }
+
+  const euro = (value, decimals = 2) => formatDecimal(value, decimals) + NBSP + '€';
+  const percent = (value, decimals = 1) => formatDecimal(value, decimals) + NBSP + '%';
+  const coef = (value) => '×' + formatDecimal(value, 2);
+  const grams = (value) => formatDecimal(value, 0) + NBSP + 'g';
+
+  function formatDateTime(iso) {
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return '';
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`
+      + ` à ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+
+  /* ---------- Calcul ---------- */
+
+  /**
+   * Arrondit à la finale « ,90 » supérieure la plus proche.
+   * 8,32 € → 8,90 € ; 8,95 € → 9,90 € ; 8,90 € reste 8,90 €.
+   * Le calcul passe par les centimes entiers : pas de surprise flottante.
+   */
+  function roundTo90(priceTTC) {
+    if (!Number.isFinite(priceTTC) || priceTTC <= 0) return 0;
+    const cents = Math.round(priceTTC * 100);
+    let target = Math.floor(cents / 100) * 100 + 90;
+    if (target < cents) target += 100;
+    return target / 100;
+  }
+
+  function compute(input) {
+    // En mode portion, le prix d'achat saisi au kilo est ramené au poids servi.
+    const weightFactor = input.unit === 'kg' ? 1 : Math.max(input.portionWeightG, 0) / 1000;
+
+    const materialCost = Math.max(input.buyPerKg, 0) * weightFactor;
+    const labor = Math.max(input.labor, 0);
+    const packaging = Math.max(input.packaging, 0);
+    const totalHT = materialCost + labor + packaging;
+
+    // Toujours >= 1 : jamais de division par zéro sur la TVA.
+    const vatFactor = 1 + Math.max(input.vatRate, 0) / 100;
+
+    let theoreticalHT = 0;
+    if (input.method === 'coefficient') {
+      theoreticalHT = totalHT * Math.max(input.coefficient, 0);
+    } else if (input.method === 'markRate') {
+      // Un taux de marque >= 100 % n'a pas de solution : on retombe sur 0.
+      const denominator = 1 - Math.max(input.markRate, 0) / 100;
+      theoreticalHT = denominator > EPSILON ? totalHT / denominator : 0;
+    } else {
+      // Calcul inverse : on remonte du TTC visé vers le HT.
+      theoreticalHT = Math.max(input.targetTTC, 0) / vatFactor;
+    }
+    if (!Number.isFinite(theoreticalHT) || theoreticalHT < 0) theoreticalHT = 0;
+
+    const theoreticalTTC = theoreticalHT * vatFactor;
+    const priceTTC = input.round && theoreticalTTC > 0 ? roundTo90(theoreticalTTC) : theoreticalTTC;
+
+    // À partir d'ici, tout découle du prix retenu — celui affiché en boutique.
+    const priceHT = priceTTC / vatFactor;
+    const margin = priceHT - totalHT;
+
+    return {
+      materialCost, labor, packaging, totalHT,
+      priceHT, priceTTC, theoreticalTTC,
+      rounded: input.round && Math.round(priceTTC * 100) !== Math.round(theoreticalTTC * 100),
+      margin,
+      markRate: priceHT > EPSILON ? (margin / priceHT) * 100 : 0,
+      coefficient: totalHT > EPSILON ? priceHT / totalHT : 0,
+      isComplete: totalHT > EPSILON && priceTTC > EPSILON,
+    };
+  }
+
+  /**
+   * Lecture métier du résultat. Les seuils sont ceux de la vente directe de
+   * frais : en dessous de ×2 au kilo, la casse et les invendus ne sont
+   * généralement pas couverts.
+   */
+  function buildAlert(result, unit) {
+    if (!result.isComplete) {
+      return {
+        tone: '',
+        title: 'En attente de chiffres',
+        message: "Renseigne le prix d'achat et la méthode de calcul : les indicateurs se mettent à jour à chaque frappe.",
+      };
+    }
+    const c = coef(result.coefficient);
+
+    if (unit === 'kg' && result.coefficient < 2) {
+      return {
+        tone: 'warn',
+        title: 'Coefficient faible',
+        message: `Coefficient de ${c} — faible pour du frais périssable en vente directe (usuellement ×2 à ×2,5 mini).`,
+      };
+    }
+    if (result.coefficient >= 2.5 && result.coefficient <= 3.5) {
+      return {
+        tone: 'ok',
+        title: 'Fourchette premium',
+        message: `Coefficient ${c} — dans la fourchette premium (sec / apéritif).`,
+      };
+    }
+    if (result.markRate < 25) {
+      return {
+        tone: 'warn',
+        title: 'Marge serrée',
+        message: `Taux de marque réel de ${percent(result.markRate)} — marge serrée, vérifie que ça couvre la casse et les invendus.`,
+      };
+    }
+    return {
+      tone: 'ok',
+      title: 'Marge cohérente',
+      message: `Coefficient ${c} pour un taux de marque de ${percent(result.markRate)} : la marge couvre les coûts saisis.`,
+    };
+  }
+
+  /* ---------- Stockage ---------- */
+
+  // Le try n'entoure que l'accès au stockage (indisponible en navigation privée,
+  // contenu potentiellement corrompu) : le reste doit échouer bruyamment.
+  function load() {
+    let raw = null;
+    try {
+      raw = JSON.parse(localStorage.getItem(STORE));
+    } catch (_) {
+      return [];
+    }
+    if (!Array.isArray(raw)) return [];
+    return raw.filter((entry) => entry && typeof entry === 'object').map((entry, index) => ({
+      id: typeof entry.id === 'string' && entry.id ? entry.id : `legacy-${index}`,
+      name: typeof entry.name === 'string' ? entry.name : 'Sans nom',
+      unit: entry.unit === 'portion' ? 'portion' : 'kg',
+      portionWeightG: Number.isFinite(entry.portionWeightG) ? entry.portionWeightG : null,
+      totalHT: Number(entry.totalHT) || 0,
+      priceHT: Number(entry.priceHT) || 0,
+      priceTTC: Number(entry.priceTTC) || 0,
+      vatRate: Number(entry.vatRate) || 0,
+      coefficient: Number(entry.coefficient) || 0,
+      markRate: Number(entry.markRate) || 0,
+      createdAt: typeof entry.createdAt === 'string' ? entry.createdAt : new Date().toISOString(),
+    }));
+  }
+
+  function save() {
+    try {
+      localStorage.setItem(STORE, JSON.stringify(products));
+    } catch (_) { /* quota ou stockage bloqué : l'app reste utilisable pour la session */ }
+  }
+
+  let products = load();
+
+  /* ---------- Éléments ---------- */
+
+  const el = {
+    portionField: $('portion-field'), portion: $('portion'),
+    buy: $('buy'), buyHint: $('buy-hint'), labor: $('labor'), pack: $('pack'), vat: $('vat'),
+    coef: $('coef'), mark: $('mark'), target: $('target'), round: $('round'),
+    name: $('name'), add: $('add'), addHint: $('add-hint'),
+    tagName: $('tag-name'), ttc: $('ttc'), ttcUnit: $('ttc-unit'), ht: $('ht'),
+    roundedNote: $('rounded-note'),
+    material: $('material'), materialNote: $('material-note'),
+    rLabor: $('r-labor'), rPack: $('r-pack'), total: $('total'),
+    margin: $('margin'), loss: $('loss'), rate: $('rate'), coefficient: $('coefficient'),
+    alert: $('alert'), alertTitle: $('alert-title'), alertMessage: $('alert-message'),
+    count: $('count'), empty: $('empty'), list: $('list'),
+  };
+
+  const numericInputs = [el.portion, el.buy, el.labor, el.pack, el.vat, el.coef, el.mark, el.target];
+
+  const currentUnit = () => document.querySelector('input[name="unit"]:checked').value;
+  const currentMethod = () => document.querySelector('input[name="method"]:checked').value;
+
+  let result = null;
+
+  /* ---------- Rendu ---------- */
+
+  function render() {
+    const unit = currentUnit();
+    const method = currentMethod();
+    const portionWeightG = parseNumber(el.portion.value);
+    const buyPerKg = parseNumber(el.buy.value);
+
+    result = compute({
+      unit, portionWeightG, buyPerKg,
+      labor: parseNumber(el.labor.value),
+      packaging: parseNumber(el.pack.value),
+      vatRate: parseNumber(el.vat.value),
+      method,
+      coefficient: parseNumber(el.coef.value),
+      markRate: parseNumber(el.mark.value),
+      targetTTC: parseNumber(el.target.value),
+      round: el.round.checked,
+    });
+
+    // Unités qui suivent le mode de vente.
+    const per = unit === 'kg' ? '€ / kg' : '€ / portion';
+    for (const node of document.querySelectorAll('.per')) node.textContent = per;
+    el.portionField.hidden = unit !== 'portion';
+    el.ttcUnit.textContent = unit === 'kg' ? '/kg' : '/portion';
+
+    el.buyHint.hidden = unit !== 'portion';
+    if (unit === 'portion') {
+      el.buyHint.textContent =
+        `Toujours saisi au kilo — soit ${euro(result.materialCost)} pour ${grams(portionWeightG)}.`;
+    }
+
+    // Le champ de la méthode choisie, et lui seul.
+    for (const name of ['coefficient', 'markRate', 'targetPrice']) {
+      $('f-' + name).hidden = name !== method;
+    }
+
+    // Raccourcis de TVA : actifs quand la valeur correspond.
+    for (const chip of document.querySelectorAll('.chip')) {
+      chip.setAttribute('aria-pressed', String(chip.dataset.vat === el.vat.value));
+    }
+
+    // L'étiquette.
+    const name = el.name.value.trim();
+    el.tagName.textContent = name || 'Prix de vente';
+    el.ttc.textContent = euro(result.priceTTC);
+    el.ht.textContent = euro(result.priceHT);
+    el.roundedNote.hidden = !result.rounded;
+    if (result.rounded) {
+      el.roundedNote.textContent = `arrondi depuis ${euro(result.theoreticalTTC)}`;
+    }
+
+    el.material.textContent = euro(result.materialCost);
+    el.materialNote.hidden = unit !== 'portion';
+    if (unit === 'portion') {
+      el.materialNote.textContent = `${grams(portionWeightG)} à ${euro(buyPerKg)}/kg`;
+    }
+    el.rLabor.textContent = euro(result.labor);
+    el.rPack.textContent = euro(result.packaging);
+    el.total.textContent = euro(result.totalHT);
+
+    el.margin.textContent = euro(result.margin);
+    el.margin.classList.toggle('loss', result.margin < 0);
+    el.loss.hidden = result.margin >= 0;
+    el.rate.textContent = percent(result.markRate);
+    el.coefficient.textContent = coef(result.coefficient);
+
+    // L'alerte.
+    const alert = buildAlert(result, unit);
+    el.alert.className = 'badge' + (alert.tone ? ' ' + alert.tone : '');
+    el.alertTitle.textContent = alert.title;
+    el.alertMessage.textContent = alert.message;
+
+    el.add.disabled = !result.isComplete;
+    el.addHint.hidden = result.isComplete;
+  }
+
+  function renderList() {
+    el.count.textContent = String(products.length);
+    el.empty.hidden = products.length > 0;
+    el.list.replaceChildren();
+
+    for (const product of products) {
+      const item = document.createElement('div');
+      item.className = 'item';
+
+      const head = document.createElement('div');
+      head.className = 'item-head';
+
+      const who = document.createElement('div');
+      who.className = 'who';
+
+      const title = document.createElement('p');
+      title.className = 'item-name';
+      // textContent, pas innerHTML : le nom vient de l'utilisateur.
+      title.textContent = product.name;
+
+      const meta = document.createElement('p');
+      meta.className = 'item-meta';
+      const unitText = product.unit === 'kg'
+        ? 'au kilo'
+        : 'à la portion' + (product.portionWeightG ? ` · ${grams(product.portionWeightG)}` : '');
+      meta.textContent = `${unitText}  ·  TVA ${percent(product.vatRate, product.vatRate % 1 === 0 ? 0 : 1)}`;
+
+      who.append(title, meta);
+
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'del';
+      del.textContent = '✕';
+      del.setAttribute('aria-label', `Supprimer ${product.name}`);
+      del.addEventListener('click', () => {
+        products = products.filter((entry) => entry.id !== product.id);
+        save();
+        renderList();
+      });
+
+      head.append(who, del);
+
+      const stats = document.createElement('div');
+      stats.className = 'stats';
+      const cells = [
+        ['PA total HT', euro(product.totalHT), false],
+        ['PV TTC', euro(product.priceTTC), true],
+        ['Coefficient', coef(product.coefficient), false],
+        ['Taux de marque', percent(product.markRate), false],
+      ];
+      for (const [label, value, accent] of cells) {
+        const stat = document.createElement('div');
+        stat.className = 'stat';
+        const k = document.createElement('div');
+        k.className = 'k';
+        k.textContent = label;
+        const v = document.createElement('div');
+        v.className = 'v' + (accent ? ' accent' : '');
+        v.textContent = value;
+        stat.append(k, v);
+        stats.append(stat);
+      }
+
+      const date = document.createElement('p');
+      date.className = 'item-date';
+      date.textContent = formatDateTime(product.createdAt);
+
+      item.append(head, stats, date);
+      el.list.append(item);
+    }
+  }
+
+  /* ---------- Événements ---------- */
+
+  for (const input of numericInputs) {
+    input.addEventListener('input', () => {
+      const clean = sanitize(input.value);
+      if (clean !== input.value) {
+        // On replace le curseur là où il était, sinon il saute à la fin.
+        const caret = Math.max(0, (input.selectionStart || 0) - (input.value.length - clean.length));
+        input.value = clean;
+        try { input.setSelectionRange(caret, caret); } catch (_) { /* champ sans sélection */ }
+      }
+      render();
+    });
+  }
+
+  el.name.addEventListener('input', render);
+  el.round.addEventListener('change', render);
+  for (const radio of document.querySelectorAll('input[name="unit"], input[name="method"]')) {
+    radio.addEventListener('change', render);
+  }
+
+  for (const chip of document.querySelectorAll('.chip')) {
+    chip.addEventListener('click', () => {
+      el.vat.value = chip.dataset.vat;
+      render();
+    });
+  }
+
+  el.add.addEventListener('click', () => {
+    if (!result || !result.isComplete) return;
+    const unit = currentUnit();
+    products.unshift({
+      id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`,
+      name: el.name.value.trim() || 'Sans nom',
+      unit,
+      portionWeightG: unit === 'portion' ? parseNumber(el.portion.value) : null,
+      totalHT: result.totalHT,
+      priceHT: result.priceHT,
+      priceTTC: result.priceTTC,
+      vatRate: parseNumber(el.vat.value),
+      coefficient: result.coefficient,
+      markRate: result.markRate,
+      createdAt: new Date().toISOString(),
+    });
+    save();
+    renderList();
+  });
+
+  render();
+  renderList();
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => { /* hors ligne ou file:// */ });
+    });
+  }
+})();
+</script>
+</body>
+</html>

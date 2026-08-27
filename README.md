@@ -86,6 +86,7 @@ l'historique, et celui-ci ne se synchronise pas entre appareils.
 | `sw.js`                 | Service worker : mise en cache pour le mode hors ligne    |
 | `icons/`                | Icônes d'écran d'accueil (générées)                       |
 | `tools/make-icons.py`   | Régénère les icônes (`pip install pillow`)                |
+| `marge/`                | Deuxième app : le calculateur de marge BOTTI FRUIT        |
 
 ## Développement
 
@@ -99,3 +100,15 @@ l'enregistrement du service worker.
 Après modification d'`index.html`, penser à incrémenter `CACHE` dans `sw.js`
 (`clopes-v1` → `clopes-v2`) pour que les téléphones déjà équipés récupèrent la
 nouvelle version.
+
+## Autre app dans ce dépôt
+
+`marge/` contient le **calculateur de marge BOTTI FRUIT** : même principe — une
+page web installable sur l'écran d'accueil, tout en local — mais pour calculer
+un prix de vente au stand des Halles.
+
+- **https://jeremywilloquet.github.io/Cigarette-/marge/**
+- Détails et formules : [`marge/README.md`](marge/README.md)
+
+Les deux apps sont indépendantes : elles ont leur propre service worker, leur
+propre cache et leur propre stockage.
