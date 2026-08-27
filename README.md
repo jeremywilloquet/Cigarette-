@@ -112,3 +112,9 @@ un prix de vente au stand des Halles.
 
 Les deux apps sont indépendantes : elles ont leur propre service worker, leur
 propre cache et leur propre stockage.
+
+Elles partagent en revanche la même origine, donc le même espace de caches. Les
+deux service workers sont écrits en conséquence : chacun ne supprime que ses
+propres anciens caches (préfixés `clopes-` et `marge-`), et ne répond qu'aux
+navigations vers sa propre page. Sans ces deux règles, ouvrir une app ferait
+perdre à l'autre son mode hors ligne.

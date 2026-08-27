@@ -23,18 +23,33 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      // On ne supprime que nos propres anciens caches : le calculateur de marge (marge/) a le sien,
+      // sur la même origine, et l'effacer lui ferait perdre son mode hors ligne.
+      .then((keys) => Promise.all(
+        keys.filter((k) => k.startsWith('clopes-') && k !== CACHE)
+          .map((k) => caches.delete(k))
+      ))
       .then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
-  if (request.method !== 'GET' || new URL(request.url).origin !== self.location.origin) return;
+  if (request.method !== 'GET') return;
+
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
 
   // Navigation : on tente le réseau pour récupérer une nouvelle version,
   // et on retombe sur le cache si le téléphone est hors ligne.
   if (request.mode === 'navigate') {
+    // Mais seulement pour notre propre page. Le dépôt héberge une seconde app
+    // dans marge/, à l'intérieur de notre scope : sans ce garde-fou, sa page
+    // s'enregistrerait sous notre clé index.html et remplacerait la copie hors
+    // ligne du compteur.
+    const rest = url.pathname.slice(new URL('./', self.location).pathname.length);
+    if (rest !== '' && rest !== 'index.html') return;
+
     event.respondWith(
       fetch(request)
         .then((response) => {
